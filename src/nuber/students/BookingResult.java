@@ -1,5 +1,6 @@
 package nuber.students;
 
+//not need to modify this class
 public class BookingResult {
 
 	public int jobID;
