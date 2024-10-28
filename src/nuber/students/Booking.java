@@ -49,7 +49,7 @@ public class Booking {
 		return bookingCounter++;
 	}
 	
-	private void startBooking(Driver driver) {
+	public void startBooking(Driver driver) {
 		this.driver = driver;
 		this.startTime = new Date().getTime();
 	}
