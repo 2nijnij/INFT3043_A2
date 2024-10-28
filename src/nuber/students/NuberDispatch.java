@@ -58,6 +58,7 @@ public class NuberDispatch {
 	 */
 	public Driver getDriver()
 	{
+		return availableDrivers.poll();
 	}
 
 	/**
