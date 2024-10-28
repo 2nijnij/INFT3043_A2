@@ -41,7 +41,11 @@ public class NuberRegion {
 	 */
 	public NuberRegion(NuberDispatch dispatch, String regionName, int maxSimultaneousJobs)
 	{
-		
+		this.dispatch = dispatch;
+		this.regionName = regionName;
+		this.maxSimultaneousJobs = maxSimultaneousJobs;
+		this.executorService = Executors.newCachedThreadPool();
+		System.out.println("Creating Nuber region for " + regionName);
 
 	}
 	
