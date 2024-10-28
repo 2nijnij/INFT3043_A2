@@ -77,6 +77,7 @@ public class Booking {
 	@Override
 	public String toString()
 	{
+		return bookingId + ":" + (driver == null ? "null" : "D-" + driver.name) + ":" + (passenger == null ? "null" : "P-" + passenger.name);
 	}
 
 }
