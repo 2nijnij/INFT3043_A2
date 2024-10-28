@@ -119,4 +119,8 @@ public class Booking {
 		return bookingId + ":" + (driver == null ? "null" : "D-" + driver.name) + ":" + (passenger == null ? "null" : "P-" + passenger.name);
 	}
 
+	public Driver getDriver() {
+		return driver;
+	}
+
 }

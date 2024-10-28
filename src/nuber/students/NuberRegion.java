@@ -60,7 +60,7 @@ public class NuberRegion {
 	 * @param waitingPassenger
 	 * @return a Future that will provide the final BookingResult object from the completed booking
 	 */
-	public synchronized Future<BookingResult> bookPassenger(Passenger passenger)
+	public synchronized Future<BookingResult> bookPassenger(Passenger passenger) {
 		if (isShuttingDown) {
 			System.out.println("Booking for passenger" + passenger.name + " rejected because region is shutting down." );
 			return null;
