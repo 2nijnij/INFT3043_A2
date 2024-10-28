@@ -1,7 +1,10 @@
 package nuber.students;
 
+import java.util.random.*;
+
 public class Driver extends Person {
 
+	private Passenger currentPassenger;
 	
 	public Driver(String driverName, int maxSleep)
 	{
