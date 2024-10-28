@@ -107,7 +107,12 @@ public class NuberRegion {
 		}
 	}
 			
-
+	private synchronized void completeBooking(Booking booking) {
+		activeBookingsCount--;
+		dispatch.addDriver(booking.getDriver());
+		System.out.println(booking + ": Driver is now free, booking complete");
+		processPendingBookings();
+	}
 		
 	
 	/**
