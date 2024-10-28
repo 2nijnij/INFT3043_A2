@@ -1,6 +1,7 @@
 package nuber.students;
 
 import java.util.HashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Future;
 
 /**
@@ -15,7 +16,7 @@ public class NuberDispatch {
 	 * The maximum number of idle drivers that can be awaiting a booking 
 	 */
 	private final int MAX_DRIVERS = 999;
-	
+	private final ConcurrentLinkedQueue<Driver> availableDrivers;
 	private boolean logEvents = false;
 	
 	/**
@@ -27,6 +28,7 @@ public class NuberDispatch {
 	 */
 	public NuberDispatch(HashMap<String, Integer> regionInfo, boolean logEvents)
 	{
+		this.availableDrivers = new ConcurrentLinkedQueue<>();
 	}
 	
 	/**
