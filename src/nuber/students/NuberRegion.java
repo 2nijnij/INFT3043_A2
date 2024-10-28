@@ -1,6 +1,11 @@
 package nuber.students;
 
+import java.util.Queue;
+import java.util.LinkedList;
+import java.util.concurrent.FutureTask;
 import java.util.concurrent.Future;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * A single Nuber region that operates independently of other regions, other than getting 
@@ -17,6 +22,14 @@ import java.util.concurrent.Future;
  *
  */
 public class NuberRegion {
+	private final NuberDispatch dispatch;
+	private final String regionName;
+	private final int maxSimultaneousJobs;
+	private boolean isShuttingDown = false;
+	
+	private Queue<Booking> pendingBookings = new LinkedList<>();
+	private int activeBookingsCount = 0;
+	private ExecutorService executorService;
 
 	
 	/**
