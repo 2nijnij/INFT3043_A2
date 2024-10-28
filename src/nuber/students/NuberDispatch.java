@@ -107,5 +107,16 @@ public class NuberDispatch {
 	 */
 	public void shutdown() {
 	}
-
+	
+	
+	public synchronized Driver waitForDriver() throws InterruptedException {
+		while (availableDrivers.isEmpty()) {
+			wait();
+		}
+		return availableDrivers.poll();
+	}
+	
+	public synchronized void notifyDriversAvailable() {
+		notifyAll();
+	}
 }
