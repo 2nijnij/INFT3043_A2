@@ -40,6 +40,10 @@ public class Booking {
 		this.bookingId = getNextBookingId();
 	}
 	
+	// implement synchronized method for ensuring all IDs are unique and thread-safe
+	private static synchronized int getNextBookingId() {
+		return bookingCounter++;
+	}
 	/**
 	 * At some point, the Nuber Region responsible for the booking can start it (has free spot),
 	 * and calls the Booking.call() function, which:
