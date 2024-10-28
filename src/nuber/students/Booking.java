@@ -35,6 +35,9 @@ public class Booking {
 	 */
 	public Booking(NuberDispatch dispatch, Passenger passenger)
 	{
+		this.dispatch = dispatch;
+		this.passenger = passenger;
+		this.bookingId = getNextBookingId();
 	}
 	
 	/**
