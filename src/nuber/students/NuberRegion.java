@@ -72,11 +72,7 @@ public class NuberRegion {
 		
 		processPendingBookings();
 		
-		FutureTask<BookingResult> bookingTask = new FutureTask<>(() -> {
-			BookingResult result = booking.call();
-			return result;
-		});
-		
+		FutureTask<BookingResult> bookingTask = new FutureTask<>(() -> booking.call());
 		executorService.submit(bookingTask);
 		return bookingTask;
 }
