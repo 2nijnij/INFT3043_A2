@@ -8,6 +8,7 @@ public class Driver extends Person {
 	
 	public Driver(String driverName, int maxSleep)
 	{
+		super(driverName, maxSleep);
 	}
 	
 	/**
