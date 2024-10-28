@@ -92,8 +92,7 @@ public class NuberRegion {
 				
 				executorService.submit(() -> {
 					try {
-						booking.pickUpPassenger();
-						booking.driveToDestination();
+						booking.call();
 						completeBooking(booking);
 					} catch (InterruptedException e) {
 						Thread.currentThread().interrupt();
