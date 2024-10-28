@@ -1,6 +1,6 @@
 package nuber.students;
 
-import java.util.random.*;
+import java.util.Random;
 
 public class Driver extends Person {
 
@@ -18,8 +18,14 @@ public class Driver extends Person {
 	 * @param newPassenger Passenger to collect
 	 * @throws InterruptedException
 	 */
-	public void pickUpPassenger(Passenger newPassenger)
-	{
+	public void pickUpPassenger(Passenger newPassenger) throws InterruptedException {
+		this.currentPassenger = newPassenger;
+		
+		Random random = new Random();
+		// random delay between 0-maxDelay milliseconds.
+		int pickUpDelay = random.nextInt(maxSleep + 1);
+		System.out.println("Driver " + name + " is picking up passenger " + newPassenger.name + " (delay: " + pickUpDelay + "ms)");
+	    Thread.sleep(pickUpDelay);
 	}
 
 	/**
