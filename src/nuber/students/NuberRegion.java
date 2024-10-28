@@ -91,14 +91,10 @@ public class NuberRegion {
 				System.out.println(booking + ":Starting booking, getting driver");
 				
 				executorService.submit(() -> {
-					try {
 						booking.call();
 						completeBooking(booking);
-					} catch (InterruptedException e) {
-						Thread.currentThread().interrupt();
-						System.out.println("Booking interrupted: " + e.getMessage());
-					}
-				});
+
+	            });
 			} else {
 				pendingBookings.offer(booking);
 				break;
