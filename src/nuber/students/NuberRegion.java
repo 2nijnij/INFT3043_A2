@@ -81,6 +81,33 @@ public class NuberRegion {
 		return bookingTask;
 }
 	private synchronized void processPendingBookings() {
+		while (activeBookingsCount < maxSimultaneousJobs && !pendingBookings.isEmpty()) {
+			Booking booking = pendingBookings.poll();
+			Driver driver = dispatch.getDriver();
+			
+			if (driver != null) {
+				booking.startBooking(driver);
+				activeBookingsCount++;
+				System.out.println(booking + ":Starting booking, getting driver");
+				
+				executorService.submit(() -> {
+					try {
+						booking.pickUpPassenger();
+						booking.driveToDestination();
+						completeBooking(booking);
+					} catch (InterruptedException e) {
+						Thread.currentThread().interrupt();
+						System.out.println("Booking interrupted: " + e.getMessage());
+					}
+				});
+			} else {
+				pendingBookings.offer(booking);
+				break;
+			}
+		}
+	}
+			
+
 		
 	
 	/**
