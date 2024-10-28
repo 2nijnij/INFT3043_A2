@@ -120,6 +120,9 @@ public class NuberRegion {
 	 */
 	public void shutdown()
 	{
+		isShuttingDown = true;
+		executorService.shutdown();
+		System.out.println("Region " + regionName + "is shutting down.");
 	}
 		
 }
