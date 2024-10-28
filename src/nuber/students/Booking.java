@@ -26,6 +26,7 @@ public class Booking {
 	private final Passenger passenger;
 	private final NuberDispatch dispatch;
 	private Driver driver;
+	private long startTime;
 		
 	/**
 	 * Creates a new booking for a given Nuber dispatch and passenger, noting that no
@@ -40,12 +41,19 @@ public class Booking {
 		this.dispatch = dispatch;
 		this.passenger = passenger;
 		this.bookingId = getNextBookingId();
+		this.startTime = 0;
 	}
 	
 	// implement synchronized method for ensuring all IDs are unique and thread-safe
 	private static synchronized int getNextBookingId() {
 		return bookingCounter++;
 	}
+	
+	private void startBooking(Driver driver) {
+		this.driver = driver;
+		this.startTime = new Date().getTime();
+	}
+	
 	/**
 	 * At some point, the Nuber Region responsible for the booking can start it (has free spot),
 	 * and calls the Booking.call() function, which:
@@ -74,24 +82,24 @@ public class Booking {
 					}
 				}
 			}
-	System.out.println(this + ": Starting, on way to passenger");
-	driver.pickUpPassenger(passenger);
+			System.out.println(this + ": Starting, on way to passenger");
+			driver.pickUpPassenger(passenger);
 	
-	System.out.println(this + ": Collected passenger, on way to destination");
-	driver.driveToDestination();
+			System.out.println(this + ": Collected passenger, on way to destination");
+			driver.driveToDestination();
 	
-	System.out.println(this + ": At destination, driver is now free");
+			System.out.println(this + ": At destination, driver is now free");
 	
-	long tripDuration = (new Date()).getTime() - startTime;
-	return new BookingResult(bookingId, passenger, driver, tripDuration);
+			long tripDuration = (new Date()).getTime() - startTime;
+			return new BookingResult(bookingId, passenger, driver, tripDuration);
 	
-	} catch (InterruptedException e) {
-		Thread.currentThread().interrupt();
-		System.err.println("Booking interrupted: " + e.getMessage());
-		return null;
-	} finally {
-		if (driver != null) {
-			dispatch.addDriver(driver);
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			System.err.println("Booking interrupted: " + e.getMessage());
+			return null;
+		} finally {
+			if (driver != null) {
+				dispatch.addDriver(driver);
 		}
 	}
 }
