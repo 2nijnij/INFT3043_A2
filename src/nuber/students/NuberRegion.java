@@ -60,10 +60,28 @@ public class NuberRegion {
 	 * @param waitingPassenger
 	 * @return a Future that will provide the final BookingResult object from the completed booking
 	 */
-	public Future<BookingResult> bookPassenger(Passenger waitingPassenger)
-	{		
+	public synchronized Future<BookingResult> bookPassenger(Passenger passenger)
+		if (isShuttingDown) {
+			System.out.println("Booking for passenger" + passenger.name + " rejected because region is shutting down." );
+			return null;
+		}
 		
-	}
+		Booking booking = new Booking(dispatch, passenger);
+		pendingBookings.offer(booking);
+		System.out.println(booking + ": Creating booking");
+		
+		processPendingBookings();
+		
+		FutureTask<BookingResult> bookingTask = new FutureTask<>(() -> {
+			BookingResult result = booking.call();
+			return result;
+		});
+		
+		executorService.submit(bookingTask);
+		return bookingTask;
+}
+	private synchronized void processPendingBookings() {
+		
 	
 	/**
 	 * Called by dispatch to tell the region to complete its existing bookings and stop accepting any new bookings
