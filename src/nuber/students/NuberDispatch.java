@@ -41,6 +41,12 @@ public class NuberDispatch {
 	 */
 	public boolean addDriver(Driver newDriver)
 	{
+		if (availableDrivers.size() < MAX_DRIVERS) {
+			availableDrivers.offer(newDriver);
+			return true;
+		} else {
+			return false;
+		}
 	}
 	
 	/**
