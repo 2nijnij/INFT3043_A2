@@ -34,7 +34,18 @@ public class Driver extends Person {
 	 * 
 	 * @throws InterruptedException
 	 */
-	public void driveToDestination() {
+	public void driveToDestination() throws InterruptedException {
+		if (currentPassenger != null) {
+			int travelTime = currentPassenger.getTravelTime();
+	        System.out.println("Driver " + name + " is currently driving passenger " + currentPassenger.name + " to destination (travel time: " + travelTime + "ms)");
+	        Thread.sleep(travelTime);
+	        System.out.println("Driver " + name + " has reached the destination with a passenger " + currentPassenger.name);
+	        
+	        currentPassenger = null;
+		} else {
+			System.out.println("No passenger is assigned to driver" + name + "to drive passenger's destination.");
+		}
+
 	}
 	
 }
