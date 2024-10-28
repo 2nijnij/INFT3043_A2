@@ -1,5 +1,7 @@
 package nuber.students;
 
+import java.util.Date;
+
 /**
  * 
  * Booking represents the overall "job" for a passenger getting to their destination.
@@ -61,9 +63,38 @@ public class Booking {
 	 * @return A BookingResult containing the final information about the booking 
 	 */
 	public BookingResult call() {
-
-	}
+		try {
+			// Request driver from dispatch
+			driver = dispatch.getDriver();
+			if (driver == null) {
+				// wait until driver is assigned, if there is no available driver.
+				synchronized (this) {
+					while (driver == null) {
+						wait();
+					}
+				}
+			}
+	System.out.println(this + ": Starting, on way to passenger");
+	driver.pickUpPassenger(passenger);
 	
+	System.out.println(this + ": Collected passenger, on way to destination");
+	driver.driveToDestination();
+	
+	System.out.println(this + ": At destination, driver is now free");
+	
+	long tripDuration = (new Date()).getTime() - startTime;
+	return new BookingResult(bookingId, passenger, driver, tripDuration);
+	
+	} catch (InterruptedException e) {
+		Thread.currentThread().interrupt();
+		System.err.println("Booking interrupted: " + e.getMessage());
+		return null;
+	} finally {
+		if (driver != null) {
+			dispatch.addDriver(driver);
+		}
+	}
+}
 	/***
 	 * Should return the:
 	 * - booking ID, 
