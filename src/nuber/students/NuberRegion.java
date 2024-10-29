@@ -1,12 +1,6 @@
 package nuber.students;
 
-import java.util.Queue;
-import java.util.LinkedList;
-import java.util.concurrent.FutureTask;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.Future;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 /**
  * A single Nuber region that operates independently of other regions, other than getting 
@@ -23,13 +17,6 @@ import java.util.concurrent.Executors;
  *
  */
 public class NuberRegion {
-	private boolean shutdownInitiated = false;
-	private final NuberDispatch dispatch;
-	private final String regionName;
-	private final int maxSimultaneousJobs;
-	private Queue<Booking> pendingBookings = new LinkedList<>();
-	private int activeBookingsCount = 0;
-	private ExecutorService executorService;
 
 	
 	/**
@@ -41,11 +28,8 @@ public class NuberRegion {
 	 */
 	public NuberRegion(NuberDispatch dispatch, String regionName, int maxSimultaneousJobs)
 	{
-		this.dispatch = dispatch;
-		this.regionName = regionName;
-		this.maxSimultaneousJobs = maxSimultaneousJobs;
-		this.executorService = Executors.newFixedThreadPool(maxSimultaneousJobs);
-		System.out.println("Creating Nuber region for " + regionName);
+		
+
 	}
 	
 	/**
@@ -59,87 +43,16 @@ public class NuberRegion {
 	 * @param waitingPassenger
 	 * @return a Future that will provide the final BookingResult object from the completed booking
 	 */
-    public Future<BookingResult> bookPassenger(Passenger passenger) {
-        synchronized (this) {
-            if (shutdownInitiated) {
-                System.out.println("Booking request rejected for passenger " + passenger.name + " in region " + regionName);
-                return null;
-            }
-
-            Booking booking = new Booking(dispatch, passenger);
-            pendingBookings.offer(booking);
-            processPendingBookings();
-            return executorService.submit(() -> booking.call());
-        }
-    }
-    
-	private synchronized void processPendingBookings() {
-		while (activeBookingsCount < maxSimultaneousJobs && !pendingBookings.isEmpty()) {
-			Booking booking = pendingBookings.poll();
-			Driver driver = dispatch.getDriver();
-			
-			if (driver != null) {
-				booking.startBooking(driver);
-				activeBookingsCount++;
-				System.out.println(booking + ": Starting booking, getting driver");
-				
-				executorService.submit(() -> {
-					BookingResult result = booking.call();
-					completeBooking(booking);
-					
-					if (result != null) {
-						System.out.println(result);
-					}
-
-	            });
-			} else {
-				pendingBookings.offer(booking);
-				break;
-			}
-		}
-	}
-			
-	private synchronized void completeBooking(Booking booking) {
-		activeBookingsCount--;
-		if (activeBookingsCount == 0) {
-			notifyAll();
-		}
-	}
+	public Future<BookingResult> bookPassenger(Passenger waitingPassenger)
+	{		
 		
+	}
 	
 	/**
 	 * Called by dispatch to tell the region to complete its existing bookings and stop accepting any new bookings
 	 */
 	public void shutdown()
 	{
-		shutdownInitiated = true;
-		System.out.println("Region " + regionName + " is shutting down. No further bookings will be accepted.");
-		
-		synchronized (this) {
-			while (activeBookingsCount > 0) {
-				try {
-					System.out.println("Region " + regionName + " waiting for active bookings to complete ...");
-					wait();
-				} catch (InterruptedException e) {
-					Thread.currentThread().interrupt();
-					System.err.println("Shutdown interrupted for region" + regionName);
-				}
-		}
-		
-			while (!pendingBookings.isEmpty()) {
-				Booking booking = pendingBookings.poll();
-				System.out.println("Pending booking is cancelling: " + booking);
-			}
-		}
-		executorService.shutdown();
-	}
-
-	public int getActiveBookingsCount() {
-		return activeBookingsCount;
-	}
-
-	public int getPendingBookingsCount() {
-		return pendingBookings.size();
 	}
 		
 }

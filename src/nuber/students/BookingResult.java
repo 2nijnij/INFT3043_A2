@@ -1,6 +1,5 @@
 package nuber.students;
 
-//not need to modify this class
 public class BookingResult {
 
 	public int jobID;
@@ -16,9 +15,4 @@ public class BookingResult {
 		this.tripDuration = tripDuration;
 	}
 	
-	@Override
-	public String toString() {
-		return "BookingResult [jobID=" + jobID + ", passenger=" + passenger.name + ", driver=" + driver.name + ", tripDuration"
- + tripDuration + " ms]";
-	}
 }

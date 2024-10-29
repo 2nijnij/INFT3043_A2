@@ -1,7 +1,5 @@
 package nuber.students;
 
-import java.util.Date;
-
 /**
  * 
  * Booking represents the overall "job" for a passenger getting to their destination.
@@ -21,12 +19,7 @@ import java.util.Date;
  *
  */
 public class Booking {
-	private static int bookingCounter = 1;
-	private final int jobID;
-	private final Passenger passenger;
-	private final NuberDispatch dispatch;
-	private Driver driver;
-	private long startTime;
+
 		
 	/**
 	 * Creates a new booking for a given Nuber dispatch and passenger, noting that no
@@ -38,20 +31,6 @@ public class Booking {
 	 */
 	public Booking(NuberDispatch dispatch, Passenger passenger)
 	{
-		this.dispatch = dispatch;
-		this.passenger = passenger;
-		this.jobID = getNextJobId();
-		this.startTime = new Date().getTime();
-	}
-	
-	// implement synchronized method for ensuring all IDs are unique and thread-safe
-	private static synchronized int getNextJobId() {
-		return bookingCounter++;
-	}
-	
-	public void startBooking(Driver driver) {
-		this.driver = driver;
-		this.startTime = new Date().getTime();
 	}
 	
 	/**
@@ -64,49 +43,14 @@ public class Booking {
 	 * 4.	It must then call the Driver.driveToDestination() function, with the thread pausing 
 	 * 			whilst as function is called.
 	 * 5.	Once at the destination, the time is recorded, so we know the total trip duration. 
-	 * 6.	The driver, now free, is added back into Dispatch�s list of available drivers. 
+	 * 6.	The driver, now free, is added back into Dispatch’s list of available drivers. 
 	 * 7.	The call() function the returns a BookingResult object, passing in the appropriate 
 	 * 			information required in the BookingResult constructor.
 	 *
 	 * @return A BookingResult containing the final information about the booking 
 	 */
 	public BookingResult call() {
-		try {
-			// Request driver from dispatch
-			driver = dispatch.getDriver();
-			if (driver == null) {
-				// wait until driver is assigned, if there is no available driver.
-				synchronized (this) {
-					while (driver == null) {
-						wait();
-					}
-				}
-			}
-			System.out.println(this + ": Starting, on way to passenger");
-			driver.pickUpPassenger(passenger);
-	
-			System.out.println(this + ": Collected passenger, on way to destination");
-			driver.driveToDestination();
-	
-			System.out.println(this + ": At destination, driver is now free");
-	
-			long tripDuration = (new Date()).getTime() - startTime;
-			
-			BookingResult result = new BookingResult(jobID, passenger, driver, tripDuration);
-			
-			dispatch.addDriver(driver);
-			
-			synchronized (dispatch) {
-				dispatch.notifyDriversAvailable();
-			}
-			
-			return result;
-	
-		} catch (InterruptedException e) {
-			Thread.currentThread().interrupt();
-			System.err.println("Booking interrupted: " + e.getMessage());
-			return null;
-		} 
+
 	}
 	
 	/***
@@ -120,13 +64,8 @@ public class Booking {
 	 * @return The compiled string
 	 */
 	@Override
-	public String toString() {
-	    return jobID + ":" + (driver == null ? "null" : driver.name) + ":" + (passenger == null ? "null" : passenger.name);
-	}
-
-
-	public Driver getDriver() {
-		return driver;
+	public String toString()
+	{
 	}
 
 }

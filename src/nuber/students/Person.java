@@ -1,6 +1,5 @@
 package nuber.students;
 
-//not need to modify this class
 public abstract class Person
 {
 	

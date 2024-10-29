@@ -9,7 +9,6 @@ import java.util.Random;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Future;
 
-//not need to modify this class
 public class Simulation {
 
 	/**
