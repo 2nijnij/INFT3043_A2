@@ -16,4 +16,9 @@ public class BookingResult {
 		this.tripDuration = tripDuration;
 	}
 	
+	@Override
+	public String toString() {
+		return "BookingResult [jobID=" + jobID + ", passenger=" + passenger.name + ", driver=" + driver.name + ", tripDuration"
+ + tripDuration + " ms]";
+	}
 }
