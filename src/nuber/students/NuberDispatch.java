@@ -18,6 +18,7 @@ public class NuberDispatch {
 	private final int MAX_DRIVERS = 999;
 	private final ConcurrentLinkedQueue<Driver> availableDrivers;
 	private boolean logEvents = false;
+	private boolean shutdownInitiated = false;
 	private final HashMap<String, NuberRegion> regions;
 
 	/**
@@ -100,6 +101,11 @@ public class NuberDispatch {
 	 * @return returns a Future<BookingResult> object
 	 */
 	public Future<BookingResult> bookPassenger(Passenger passenger, String regionName) {
+		if (shutdownInitiated) {
+			System.out.println("Booking request rejected for passenger" + passenger.name + " because dispatch is shutting down.");
+			return null;
+		}
+		
 		NuberRegion region = regions.get(regionName);
 		
 		if (region == null) {
@@ -150,6 +156,12 @@ public class NuberDispatch {
 	 * Tells all regions to finish existing bookings already allocated, and stop accepting new bookings
 	 */
 	public void shutdown() {
+		shutdownInitiated = true;
+		System.out.println("Dispatch is shutting down. No further booking will be accepted.");
+		
+		for (NuberRegion region : regions.values()) {
+			region.shutdown();
+		}
 	}
 	
 	
