@@ -61,22 +61,20 @@ public class NuberRegion {
 	 * @param waitingPassenger
 	 * @return a Future that will provide the final BookingResult object from the completed booking
 	 */
-	public synchronized Future<BookingResult> bookPassenger(Passenger passenger) {
-		if (isShuttingDown) {
-			System.out.println("Booking for passenger" + passenger.name + " rejected because region is shutting down." );
-			return null;
-		}
-		
-		Booking booking = new Booking(dispatch, passenger);
-		pendingBookings.offer(booking);
-		System.out.println(booking + ": Creating booking");
-		
-		processPendingBookings();
-		
-		FutureTask<BookingResult> bookingTask = new FutureTask<>(() -> booking.call());
-		executorService.submit(bookingTask);
-		return bookingTask;
-}
+    public Future<BookingResult> bookPassenger(Passenger passenger) {
+        synchronized (this) {
+            if (shutdownInitiated) {
+                System.out.println("Booking request rejected for passenger " + passenger.name + " in region " + regionName);
+                return null;
+            }
+
+            Booking booking = new Booking(dispatch, passenger);
+            pendingBookings.offer(booking);
+            processPendingBookings();
+            return executorService.submit(() -> booking.call());
+        }
+    }
+    
 	private synchronized void processPendingBookings() {
 		while (activeBookingsCount < maxSimultaneousJobs && !pendingBookings.isEmpty()) {
 			Booking booking = pendingBookings.poll();
@@ -116,8 +114,8 @@ public class NuberRegion {
 	 */
 	public void shutdown()
 	{
-		System.out.println("Region " + regionName + " is shutting down.");
 		shutdownInitiated = true;
+		System.out.println("Region " + regionName + " is shutting down. No further bookings will be accepted.");
 		
 		synchronized (this) {
 			while (activeBookingsCount > 0) {
@@ -135,7 +133,7 @@ public class NuberRegion {
 				System.out.println("Pending booking is cancelling: " + booking);
 			}
 		}
-		System.out.println("Region" + regionName + " has completed shutdown.");
+		executorService.shutdown();
 	}
 
 	public int getActiveBookingsCount() {
