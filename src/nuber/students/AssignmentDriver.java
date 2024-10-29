@@ -52,11 +52,13 @@ public class AssignmentDriver {
 
 		//shutdown the dispatch when it's done
 		dispatch.shutdown();
+		
+		//test booking counts
+		System.out.println("Active bookings: " + dispatch.getTotalActiveBookings() + ", pending: " + dispatch.getTotalPendingBookings());
+
 
 		
-		
-		
-		
+
 		//create NuberDispatch for given regions and max simultaneous jobs per region
 		//once you have the above running, you should be able to uncomment the Simulations below to start to put everything together
 		

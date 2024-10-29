@@ -1,6 +1,12 @@
 package nuber.students;
 
+import java.util.Queue;
+import java.util.LinkedList;
 import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * A single Nuber region that operates independently of other regions, other than getting 
@@ -17,7 +23,14 @@ import java.util.concurrent.Future;
  *
  */
 public class NuberRegion {
+    private final NuberDispatch dispatch;
+    private final String regionName;
+    private final int maxSimultaneousJobs;
+    private boolean isShuttingDown = false;
 
+    private Queue<Booking> pendingBookings = new LinkedList<>();
+    private int activeBookingsCount = 0;
+    private ExecutorService executorService;
 	
 	/**
 	 * Creates a new Nuber region
@@ -28,8 +41,11 @@ public class NuberRegion {
 	 */
 	public NuberRegion(NuberDispatch dispatch, String regionName, int maxSimultaneousJobs)
 	{
-		
-
+        this.dispatch = dispatch;
+        this.regionName = regionName;
+        this.maxSimultaneousJobs = maxSimultaneousJobs;
+        this.executorService = Executors.newCachedThreadPool();
+        System.out.println("Creating Nuber region for " + regionName);	
 	}
 	
 	/**
@@ -43,16 +59,85 @@ public class NuberRegion {
 	 * @param waitingPassenger
 	 * @return a Future that will provide the final BookingResult object from the completed booking
 	 */
-	public Future<BookingResult> bookPassenger(Passenger waitingPassenger)
+	public synchronized Future<BookingResult> bookPassenger(Passenger waitingPassenger)
 	{		
-		
+        if (isShuttingDown) {
+            System.out.println("Booking for passenger " + waitingPassenger.name + " rejected because region is shutting down.");
+            return null;		
+        }
+        
+        Booking booking = new Booking(dispatch, waitingPassenger);
+        pendingBookings.offer(booking);
+        System.out.println(booking + ": Creating booking");
+        
+        processPendingBookings();
+        
+        FutureTask<BookingResult> bookingTask = new FutureTask<>(() -> booking.call());
+        executorService.submit(bookingTask);
+        return bookingTask;
+   }
+        
+	
+	private synchronized void processPendingBookings() {
+        while (activeBookingsCount < maxSimultaneousJobs && !pendingBookings.isEmpty()) {
+            Booking booking = pendingBookings.poll();
+            Driver driver = dispatch.getDriver();
+
+            if (driver != null) {
+                booking.startBooking(driver);
+                activeBookingsCount++;
+                System.out.println(booking + ": Starting booking, getting driver");
+                
+                executorService.submit(() -> {
+                    BookingResult result = booking.call();
+                    completeBooking(booking);
+                    
+                    if (result != null) {
+                    	System.out.println(result);
+                    }
+                });
+            } else {
+                // No driver is available, re-queue the booking
+                pendingBookings.offer(booking);
+                break;
+            }
+        }	
 	}
+
+    private synchronized void completeBooking(Booking booking) {
+        activeBookingsCount--;
+        dispatch.addDriver(booking.getDriver());
+        System.out.println(booking + ": Driver is now free, booking complete");
+        // Trigger pending bookings processing after completing one
+        processPendingBookings();
+    }
 	
 	/**
 	 * Called by dispatch to tell the region to complete its existing bookings and stop accepting any new bookings
 	 */
-	public void shutdown()
+	public synchronized void shutdown()
 	{
+        isShuttingDown = true;
+        System.out.println("Region " + regionName + " is shutting down.");
+        
+        executorService.shutdown();
+        try {
+            if (!executorService.awaitTermination(60, TimeUnit.SECONDS)) {
+                System.err.println("Executor service did not terminate in the specified time.");
+                executorService.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            executorService.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
 	}
+	
+    public synchronized int getActiveBookingsCount() {
+        return activeBookingsCount;
+    }
+    
+    public synchronized int getPendingBookingsCount() {
+        return pendingBookings.size();
+    }
 		
 }

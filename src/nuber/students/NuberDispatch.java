@@ -2,6 +2,7 @@ package nuber.students;
 
 import java.util.HashMap;
 import java.util.concurrent.Future;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * The core Dispatch class that instantiates and manages everything for Nuber
@@ -10,7 +11,8 @@ import java.util.concurrent.Future;
  *
  */
 public class NuberDispatch {
-
+    private final ConcurrentLinkedQueue<Driver> availableDrivers;
+    private final HashMap<String, NuberRegion> regions;
 	/**
 	 * The maximum number of idle drivers that can be awaiting a booking 
 	 */
@@ -27,8 +29,34 @@ public class NuberDispatch {
 	 */
 	public NuberDispatch(HashMap<String, Integer> regionInfo, boolean logEvents)
 	{
-	}
+		this.availableDrivers = new ConcurrentLinkedQueue<>();
+		this.regions = new HashMap<>();
+        this.logEvents = logEvents;
+        
+        for (String regionName : regionInfo.keySet()) {
+            int maxSimultaneousJobs = regionInfo.get(regionName);
+            regions.put(regionName, new NuberRegion(this, regionName, maxSimultaneousJobs));
+        }
+
+        System.out.println("Creating Nuber Dispatch");
+    }
 	
+    public synchronized int getTotalActiveBookings1() {
+        int totalActive = 0;
+        for (NuberRegion region : regions.values()) {
+            totalActive += region.getActiveBookingsCount();
+        }
+        return totalActive;
+    }
+    
+    public synchronized int getTotalPendingBookings1() {
+        int totalPending = 0;
+        for (NuberRegion region : regions.values()) {
+            totalPending += region.getPendingBookingsCount();
+        }
+        return totalPending;
+    }
+        
 	/**
 	 * Adds drivers to a queue of idle driver.
 	 *  
@@ -39,6 +67,12 @@ public class NuberDispatch {
 	 */
 	public boolean addDriver(Driver newDriver)
 	{
+	    if (availableDrivers.size() < MAX_DRIVERS) {
+	        availableDrivers.offer(newDriver);
+	        return true;
+	    } else {
+	        return false;
+	    }
 	}
 	
 	/**
@@ -50,6 +84,7 @@ public class NuberDispatch {
 	 */
 	public Driver getDriver()
 	{
+	    return availableDrivers.poll();
 	}
 
 	/**
@@ -79,8 +114,38 @@ public class NuberDispatch {
 	 * @param region The region to book them into
 	 * @return returns a Future<BookingResult> object
 	 */
-	public Future<BookingResult> bookPassenger(Passenger passenger, String region) {
+	public Future<BookingResult> bookPassenger(Passenger passenger, String regionName) {
+        NuberRegion region = regions.get(regionName);
+
+        if (region == null) {
+            System.err.println("Region " + regionName + " does not exist.");
+            return null;
+        }
+
+        Future<BookingResult> bookingFuture = region.bookPassenger(passenger);
+        if (bookingFuture == null) {
+            System.out.println("Booking rejected for passenger " + passenger.name + " in region " + regionName);
+        }
+        
+        return bookingFuture;
+
 	}
+	
+    public synchronized int getTotalActiveBookings() {
+        int totalActive = 0;
+        for (NuberRegion region : regions.values()) {
+            totalActive += region.getActiveBookingsCount();
+        }
+        return totalActive;
+    }
+    
+    public synchronized int getTotalPendingBookings() {
+        int totalPending = 0;
+        for (NuberRegion region : regions.values()) {
+            totalPending += region.getPendingBookingsCount();
+        }
+        return totalPending;
+    }
 
 	/**
 	 * Gets the number of non-completed bookings that are awaiting a driver from dispatch
@@ -89,9 +154,13 @@ public class NuberDispatch {
 	 * 
 	 * @return Number of bookings awaiting driver, across ALL regions
 	 */
-	public int getBookingsAwaitingDriver()
-	{
-	}
+    public synchronized int getBookingsAwaitingDriver() {
+        int totalAwaitingDrivers = 0;
+        for (NuberRegion region : regions.values()) {
+            totalAwaitingDrivers += region.getPendingBookingsCount();
+        }
+        return totalAwaitingDrivers;
+    }
 	
 	/**
 	 * Tells all regions to finish existing bookings already allocated, and stop accepting new bookings
