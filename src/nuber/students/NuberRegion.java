@@ -116,7 +116,7 @@ public class NuberRegion {
 	public synchronized void shutdown()
 	{
 		isShuttingDown = true;
-		System.out.println("Region " + regionName + "is shutting down.");
+		System.out.println("Region " + regionName + " is shutting down.");
 
 		executorService.shutdown();
 		try {
