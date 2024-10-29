@@ -61,6 +61,7 @@ public class NuberDispatch {
 		if (availableDrivers.size() < MAX_DRIVERS) {
 			availableDrivers.offer(newDriver);
 			System.out.println("Driver " + newDriver.name + " added back to the queue.");
+			notifyDriversAvailable();
 			return true;
 		}
 		return false;
@@ -171,13 +172,18 @@ public class NuberDispatch {
 		executorService.shutdown();
 		
 		try {
-			if (!executorService.awaitTermination(60, TimeUnit.SECONDS)) {
-				executorService.shutdownNow();
-				if (!executorService.awaitTermination(60, TimeUnit.SECONDS)) {
-					System.err.println("Executor service did not terminate");
-				}
+			int maxWaitAttempts = 5;
+			int attempt = 0;
+			while (!executorService.awaitTermination(60, TimeUnit.SECONDS) && attempt < maxWaitAttempts) {
+				System.out.println("Waiting for active bookings to complete...");
+				attempt++;
 			}
-		} catch (InterruptedException ie) {
+			
+			if (!executorService.isTerminated()) {
+				System.out.println("Forcing shutdown of remaining tasks.");
+				executorService.shutdownNow();
+			} 
+		}catch (InterruptedException ie) {
 			executorService.shutdownNow();
 			Thread.currentThread().interrupt();
 		}
