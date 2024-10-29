@@ -98,7 +98,9 @@ public class Booking {
 	    } catch (InterruptedException e) {
 	        Thread.currentThread().interrupt();
 	        System.err.println("Booking interrupted: " + e.getMessage());
-	        return null;
+	        
+	        return new BookingResult(jobID, passenger, null, -1);
+	        
 	    } finally {
 	        if (driver != null) {
 	            dispatch.addDriver(driver);
