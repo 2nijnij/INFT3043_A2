@@ -53,7 +53,7 @@ public class AssignmentDriver {
 
 		//shutdown the dispatch when it's done
 		dispatch.shutdown();
-
+		System.out.println("Active bookings: " + dispatch.getTotalActiveBookings() + " ," + "pending: " + dispatch.getTotalPendingBookings());
 		
 		
 		
@@ -70,6 +70,8 @@ public class AssignmentDriver {
 		//new Simulation(regions, 10, 10, 1000, logEvents);
 		//new Simulation(regions, 10, 100, 1000, logEvents);
 		//new Simulation(regions, 1, 50, 1000, logEvents);
+		
+		
 	}
 
 }
