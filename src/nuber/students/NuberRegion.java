@@ -45,9 +45,8 @@ public class NuberRegion {
 		this.dispatch = dispatch;
 		this.regionName = regionName;
 		this.maxSimultaneousJobs = maxSimultaneousJobs;
-		this.executorService = Executors.newCachedThreadPool();
+		this.executorService = Executors.newFixedThreadPool(maxSimultaneousJobs);
 		System.out.println("Creating Nuber region for " + regionName);
-
 	}
 	
 	/**
@@ -85,7 +84,7 @@ public class NuberRegion {
 			if (driver != null) {
 				booking.startBooking(driver);
 				activeBookingsCount++;
-				System.out.println(booking + ":Starting booking, getting driver");
+				System.out.println(booking + ": Starting booking, getting driver");
 				
 				executorService.submit(() -> {
 						booking.call();
