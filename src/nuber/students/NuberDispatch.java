@@ -114,7 +114,19 @@ public class NuberDispatch {
 	 * @param region The region to book them into
 	 * @return returns a Future<BookingResult> object
 	 */
-	public Future<BookingResult> bookPassenger(Passenger passenger, String region) {
+	public Future<BookingResult> bookPassenger(Passenger passenger, String regionName) {
+		NuberRegion region = regions.get(regionName);
+		
+		if (region == null) {
+			System.err.println("Region " + regionName + " does not exist.");
+			return null;
+		}
+		
+		Future<BookingResult> bookingFuture = region.bookPassenger(passenger);
+		if (bookingFuture == null) {
+			System.out.println("Booking rejected for passenger" + passenger.name + "in region " + regionName);
+		}
+		return bookingFuture;
 	}
 
 	/**
