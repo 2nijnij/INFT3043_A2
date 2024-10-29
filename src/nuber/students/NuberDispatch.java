@@ -165,6 +165,15 @@ public class NuberDispatch {
 		shutdownInitiated = true;
 		System.out.println("Dispatch is shutting down. No further booking will be accepted.");
 		
+		while (getTotalActiveBookings() > 0) {
+			try {
+				System.out.println("Waiting for active bookings to complete before shutting down ...");
+				Thread.sleep(5000);
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+			}
+		}
+		 
 		for (NuberRegion region : regions.values()) {
 			region.shutdown();
 		}
@@ -172,7 +181,7 @@ public class NuberDispatch {
 		executorService.shutdown();
 		
 		try {
-			int maxWaitAttempts = 5;
+			int maxWaitAttempts = 10;
 			int attempt = 0;
 			while (!executorService.awaitTermination(60, TimeUnit.SECONDS) && attempt < maxWaitAttempts) {
 				System.out.println("Waiting for active bookings to complete...");
@@ -183,7 +192,7 @@ public class NuberDispatch {
 				System.out.println("Forcing shutdown of remaining tasks.");
 				executorService.shutdownNow();
 			} 
-		}catch (InterruptedException ie) {
+		} catch (InterruptedException ie) {
 			executorService.shutdownNow();
 			Thread.currentThread().interrupt();
 		}
