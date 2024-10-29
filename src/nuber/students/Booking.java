@@ -22,7 +22,7 @@ import java.util.Date;
  */
 public class Booking {
 	private static int bookingCounter = 1;
-	private final int jobId;
+	private final int jobID;
 	private final Passenger passenger;
 	private final NuberDispatch dispatch;
 	private Driver driver;
@@ -40,7 +40,7 @@ public class Booking {
 	{
 		this.dispatch = dispatch;
 		this.passenger = passenger;
-		this.jobId = getNextJobId();
+		this.jobID = getNextJobId();
 		this.startTime = 0;
 	}
 	
@@ -91,7 +91,7 @@ public class Booking {
 			System.out.println(this + ": At destination, driver is now free");
 	
 			long tripDuration = (new Date()).getTime() - startTime;
-			return new BookingResult(jobId, passenger, driver, tripDuration);
+			return new BookingResult(jobID, passenger, driver, tripDuration);
 	
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
@@ -116,7 +116,7 @@ public class Booking {
 	@Override
 	public String toString()
 	{
-		return jobId + ":" + (driver == null ? "null" : "D-" + driver.name) + ":" + (passenger == null ? "null" : "P-" + passenger.name);
+		return jobID + ":" + (driver == null ? "null" : "D-" + driver.name) + ":" + (passenger == null ? "null" : "P-" + passenger.name);
 	}
 
 	public Driver getDriver() {
