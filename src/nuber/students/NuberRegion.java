@@ -27,8 +27,6 @@ public class NuberRegion {
 	private final NuberDispatch dispatch;
 	private final String regionName;
 	private final int maxSimultaneousJobs;
-	private boolean isShuttingDown = false;
-	
 	private Queue<Booking> pendingBookings = new LinkedList<>();
 	private int activeBookingsCount = 0;
 	private ExecutorService executorService;

@@ -6,6 +6,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.CountDownLatch;
 
 /**
  * The core Dispatch class that instantiates and manages everything for Nuber
@@ -24,6 +25,7 @@ public class NuberDispatch {
 	private boolean shutdownInitiated = false;
 	private final HashMap<String, NuberRegion> regions;
 	private final ExecutorService executorService;
+	private CountDownLatch latch;
 
 	/**
 	 * Creates a new dispatch objects and instantiates the required regions and any other objects required.
@@ -38,6 +40,7 @@ public class NuberDispatch {
 		this.logEvents = logEvents;
 		this.regions = new HashMap<>();
 		this.executorService = Executors.newCachedThreadPool();
+		this.latch = new CountDownLatch(0);
 		
         for (String regionName : regionInfo.keySet()) {
             int maxSimultaneousJobs = regionInfo.get(regionName);
@@ -61,7 +64,7 @@ public class NuberDispatch {
 		if (availableDrivers.size() < MAX_DRIVERS) {
 			availableDrivers.offer(newDriver);
 			System.out.println("Driver " + newDriver.name + " added back to the queue.");
-			notifyDriversAvailable();
+			notifyAll();
 			return true;
 		}
 		return false;
@@ -119,11 +122,13 @@ public class NuberDispatch {
 			return null;
 		}
 		
-		Future<BookingResult> bookingFuture = region.bookPassenger(passenger);
-		if (bookingFuture == null) {
-			System.out.println("Booking rejected for passenger" + passenger.name + "in region " + regionName);
-		}
-		return bookingFuture;
+        latch = new CountDownLatch(getTotalActiveBookings() + 1); 
+        Future<BookingResult> bookingFuture = region.bookPassenger(passenger);
+        if (bookingFuture == null) {
+            latch.countDown();
+            System.out.println("Booking rejected for passenger " + passenger.name + " in region " + regionName);
+        }
+        return bookingFuture;
 	}
 	
 	public synchronized int getTotalActiveBookings() {
@@ -163,42 +168,32 @@ public class NuberDispatch {
 	 */
 	public void shutdown() {
 		shutdownInitiated = true;
-		System.out.println("Dispatch is shutting down. No further booking will be accepted.");
-		
-		while (getTotalActiveBookings() > 0) {
-			try {
-				System.out.println("Waiting for active bookings to complete before shutting down ...");
-				Thread.sleep(5000);
-			} catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
-			}
-		}
-		 
-		for (NuberRegion region : regions.values()) {
-			region.shutdown();
-		}
-		
-		executorService.shutdown();
-		
-		try {
-			int maxWaitAttempts = 10;
-			int attempt = 0;
-			while (!executorService.awaitTermination(60, TimeUnit.SECONDS) && attempt < maxWaitAttempts) {
-				System.out.println("Waiting for active bookings to complete...");
-				attempt++;
-			}
-			
-			if (!executorService.isTerminated()) {
-				System.out.println("Forcing shutdown of remaining tasks.");
-				executorService.shutdownNow();
-			} 
-		} catch (InterruptedException ie) {
-			executorService.shutdownNow();
-			Thread.currentThread().interrupt();
-		}
-		System.out.println("Shutdown complete. Active bookings: " + getTotalActiveBookings() + ", pending: " + getTotalPendingBookings());
+        System.out.println("Dispatch is shutting down. No further bookings will be accepted.");
+
+        for (NuberRegion region : regions.values()) {
+            region.shutdown();
+        }
+        
+        try {
+        	latch.await();
+        	System.out.println("All bookings completed, proceeding with shutdown.");
+        } catch (InterruptedException e) {
+        	Thread.currentThread().interrupt();
+        }
+        executorService.shutdown();
+        try {
+        	if(!executorService.awaitTermination(30, TimeUnit.SECONDS)) {
+        		System.out.println("Forcing shutdwon of remaining tasks.");
+        		executorService.shutdownNow();
+        	}
+        } catch (InterruptedException e) {
+        	executorService.shutdownNow();
+        	Thread.currentThread().interrupt();
+        }
+        
+        System.out.println("Shutdown complete.");
 	}
-	
+
 	
 	public synchronized Driver waitForDriver() throws InterruptedException {
 		while (availableDrivers.isEmpty()) {
