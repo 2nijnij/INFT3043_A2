@@ -114,10 +114,10 @@ public class Booking {
 	 * @return The compiled string
 	 */
 	@Override
-	public String toString()
-	{
-		return jobID + ":" + (driver == null ? "null" : "D-" + driver.name) + ":" + (passenger == null ? "null" : "P-" + passenger.name);
+	public String toString() {
+	    return jobID + ":" + (driver == null ? "null" : driver.name) + ":" + (passenger == null ? "null" : passenger.name);
 	}
+
 
 	public Driver getDriver() {
 		return driver;
