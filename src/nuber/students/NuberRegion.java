@@ -119,5 +119,9 @@ public class NuberRegion {
 	public int getActiveBookingsCount() {
 		return activeBookingsCount;
 	}
+
+	public int getPendingBookingsCount() {
+		return pendingBookings.size();
+	}
 		
 }
