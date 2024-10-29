@@ -41,6 +41,14 @@ public class NuberDispatch {
 		System.out.println("Creating Nuber Dispatch");
 	}
 	
+	public synchronized int getTotalActiveBookings() {
+		int totalActive = 0;
+		for (NuberRegion region : regions.values()) {
+			totalActive += region.getActiveBookingsCount();
+		}
+		return totalActive;
+	}
+	
 	/**
 	 * Adds drivers to a queue of idle driver.
 	 *  
