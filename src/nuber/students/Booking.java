@@ -41,7 +41,7 @@ public class Booking {
 		this.dispatch = dispatch;
 		this.passenger = passenger;
 		this.jobID = getNextJobId();
-		this.startTime = 0;
+		this.startTime = new Date().getTime();
 	}
 	
 	// implement synchronized method for ensuring all IDs are unique and thread-safe
@@ -91,9 +91,14 @@ public class Booking {
 			System.out.println(this + ": At destination, driver is now free");
 	
 			long tripDuration = (new Date()).getTime() - startTime;
+			
 			BookingResult result = new BookingResult(jobID, passenger, driver, tripDuration);
 			
 			dispatch.addDriver(driver);
+			
+			synchronized (dispatch) {
+				dispatch.notifyDriversAvailable();
+			}
 			
 			return result;
 	
@@ -101,12 +106,9 @@ public class Booking {
 			Thread.currentThread().interrupt();
 			System.err.println("Booking interrupted: " + e.getMessage());
 			return null;
-		} finally {
-			synchronized (dispatch) {
-				dispatch.notifyDriversAvailable();
-		}
+		} 
 	}
-}
+	
 	/***
 	 * Should return the:
 	 * - booking ID, 
