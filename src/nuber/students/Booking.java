@@ -94,14 +94,16 @@ public class Booking {
 			BookingResult result = new BookingResult(jobID, passenger, driver, tripDuration);
 			
 			dispatch.addDriver(driver);
+			
+			return result;
 	
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
 			System.err.println("Booking interrupted: " + e.getMessage());
 			return null;
 		} finally {
-			if (driver != null) {
-				dispatch.addDriver(driver);
+			synchronized (dispatch) {
+				dispatch.notifyDriversAvailable();
 		}
 	}
 }
