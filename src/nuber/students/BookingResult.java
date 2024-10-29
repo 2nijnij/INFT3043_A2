@@ -18,8 +18,8 @@ public class BookingResult {
 	@Override
 	public String toString()
 	{
-        return "BookingResult [jobID=" + jobID + ":" + (driver == null ? "null" : driver.name) + ":" + 
-                (passenger == null ? "null" : passenger.name);
+        return "BookingResult[jobID=" + jobID + ":" + (driver == null ? "null" : "D-" + driver.name) + ":" + 
+                (passenger == null ? "null" : "P-" + passenger.name) +"]";
 	}
 
 }

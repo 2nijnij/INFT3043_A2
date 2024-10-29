@@ -100,7 +100,6 @@ public class Booking {
 	        System.err.println("Booking interrupted: " + e.getMessage());
 	        
 	        return new BookingResult(jobID, passenger, null, -1);
-	        
 	    } finally {
 	        if (driver != null) {
 	            dispatch.addDriver(driver);
@@ -121,8 +120,8 @@ public class Booking {
 	@Override
 	public String toString()
 	{
-        return jobID + ":" + (driver == null ? "null" : driver.name) + ":" + 
-                (passenger == null ? "null" : passenger.name);
+        return jobID + ":" + (driver == null ? "null" : "D-" + driver.name) + ":" + 
+                (passenger == null ? "null" : "P-" + passenger.name);
 	}
 
 }
