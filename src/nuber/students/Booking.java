@@ -91,7 +91,9 @@ public class Booking {
 			System.out.println(this + ": At destination, driver is now free");
 	
 			long tripDuration = (new Date()).getTime() - startTime;
-			return new BookingResult(jobID, passenger, driver, tripDuration);
+			BookingResult result = new BookingResult(jobID, passenger, driver, tripDuration);
+			
+			dispatch.addDriver(driver);
 	
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
