@@ -87,8 +87,12 @@ public class NuberRegion {
 				System.out.println(booking + ": Starting booking, getting driver");
 				
 				executorService.submit(() -> {
-						booking.call();
-						completeBooking(booking);
+					BookingResult result = booking.call();
+					completeBooking(booking);
+					
+					if (result != null) {
+						System.out.println(result);
+					}
 
 	            });
 			} else {
