@@ -2,7 +2,10 @@ package nuber.students;
 
 import java.util.HashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 /**
  * The core Dispatch class that instantiates and manages everything for Nuber
@@ -20,6 +23,7 @@ public class NuberDispatch {
 	private boolean logEvents = false;
 	private boolean shutdownInitiated = false;
 	private final HashMap<String, NuberRegion> regions;
+	private final ExecutorService executorService;
 
 	/**
 	 * Creates a new dispatch objects and instantiates the required regions and any other objects required.
@@ -33,6 +37,7 @@ public class NuberDispatch {
 		this.availableDrivers = new ConcurrentLinkedQueue<>();
 		this.logEvents = logEvents;
 		this.regions = new HashMap<>();
+		this.executorService = Executors.newCachedThreadPool();
 		
         for (String regionName : regionInfo.keySet()) {
             int maxSimultaneousJobs = regionInfo.get(regionName);
@@ -162,6 +167,21 @@ public class NuberDispatch {
 		for (NuberRegion region : regions.values()) {
 			region.shutdown();
 		}
+		
+		executorService.shutdown();
+		
+		try {
+			if (!executorService.awaitTermination(60, TimeUnit.SECONDS)) {
+				executorService.shutdownNow();
+				if (!executorService.awaitTermination(60, TimeUnit.SECONDS)) {
+					System.err.println("Executor service did not terminate");
+				}
+			}
+		} catch (InterruptedException ie) {
+			executorService.shutdownNow();
+			Thread.currentThread().interrupt();
+		}
+		System.out.println("Shutdown complete. Active bookings: " + getTotalActiveBookings() + ", pending: " + getTotalPendingBookings());
 	}
 	
 	
