@@ -33,6 +33,12 @@ public class NuberDispatch {
 		this.availableDrivers = new ConcurrentLinkedQueue<>();
 		this.logEvents = logEvents;
 		this.regions = new HashMap<>();
+		
+		for (Map.Entry<String, Integer> entry : regionInfo.entrySet()) {
+			regions.put(entry.getKey(), new NuberRegion(this, entry.getKey(), entry.getValue()));
+		}
+		
+		System.out.println("Creating Nuber Dispatch");
 	}
 	
 	/**
