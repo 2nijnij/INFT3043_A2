@@ -41,22 +41,7 @@ public class NuberDispatch {
 		System.out.println("Creating Nuber Dispatch");
 	}
 	
-	public synchronized int getTotalActiveBookings() {
-		int totalActive = 0;
-		for (NuberRegion region : regions.values()) {
-			totalActive += region.getActiveBookingsCount();
-		}
-		return totalActive;
-	}
-	
-	public synchronized int getTotalPendingBookings() {
-		int totalPending = 0;
-		for (NuberRegion region : regions.values()) {
-			totalPending += region.getPendingBookingsCount();
-		}
-		return totalPending;
-	}
-	
+
 	/**
 	 * Adds drivers to a queue of idle driver.
 	 *  
@@ -128,6 +113,22 @@ public class NuberDispatch {
 		}
 		return bookingFuture;
 	}
+	
+	public synchronized int getTotalActiveBookings() {
+		int totalActive = 0;
+		for (NuberRegion region : regions.values()) {
+			totalActive += region.getActiveBookingsCount();
+		}
+		return totalActive;
+	}
+	
+	public synchronized int getTotalPendingBookings() {
+		int totalPending = 0;
+		for (NuberRegion region : regions.values()) {
+			totalPending += region.getPendingBookingsCount();
+		}
+		return totalPending;
+	}
 
 	/**
 	 * Gets the number of non-completed bookings that are awaiting a driver from dispatch
@@ -136,8 +137,13 @@ public class NuberDispatch {
 	 * 
 	 * @return Number of bookings awaiting driver, across ALL regions
 	 */
-	public int getBookingsAwaitingDriver()
+	public synchronized int getBookingsAwaitingDriver()
 	{
+		int totalAwaitingDrivers = 0;
+		for (NuberRegion region : regions.values() ) {
+			totalAwaitingDrivers += region.getPendingBookingsCount();
+		}
+		return totalAwaitingDrivers;
 	}
 	
 	/**
