@@ -48,9 +48,10 @@ public class Booking {
         return bookingCounter++;
     }
     
-    public void startBooking(Driver driver) {
+    public synchronized void startBooking(Driver driver) {
         this.driver = driver;
         this.startTime = new Date().getTime();
+        notify();
     }
     
 	public Driver getDriver() {
@@ -73,17 +74,12 @@ public class Booking {
 	 *
 	 * @return A BookingResult containing the final information about the booking 
 	 */
-	public BookingResult call() {
+	public synchronized BookingResult call() {
 	    try {
-	        if (driver == null) {
-	            // If no driver is available, wait until one is assigned
-	            synchronized (this) {
 	                while (driver == null) {
 	                    wait();
 	                }
-	            }
-	        }
-
+	                
 	        System.out.println(this + ": Starting, on way to passenger");
 	        driver.pickUpPassenger(passenger);
 
