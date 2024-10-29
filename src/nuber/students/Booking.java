@@ -22,7 +22,7 @@ import java.util.Date;
  */
 public class Booking {
 	private static int bookingCounter = 1;
-	private final int bookingId;
+	private final int jobId;
 	private final Passenger passenger;
 	private final NuberDispatch dispatch;
 	private Driver driver;
@@ -40,12 +40,12 @@ public class Booking {
 	{
 		this.dispatch = dispatch;
 		this.passenger = passenger;
-		this.bookingId = getNextBookingId();
+		this.jobId = getNextJobId();
 		this.startTime = 0;
 	}
 	
 	// implement synchronized method for ensuring all IDs are unique and thread-safe
-	private static synchronized int getNextBookingId() {
+	private static synchronized int getNextJobId() {
 		return bookingCounter++;
 	}
 	
@@ -91,7 +91,7 @@ public class Booking {
 			System.out.println(this + ": At destination, driver is now free");
 	
 			long tripDuration = (new Date()).getTime() - startTime;
-			return new BookingResult(bookingId, passenger, driver, tripDuration);
+			return new BookingResult(jobId, passenger, driver, tripDuration);
 	
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
@@ -116,7 +116,7 @@ public class Booking {
 	@Override
 	public String toString()
 	{
-		return bookingId + ":" + (driver == null ? "null" : "D-" + driver.name) + ":" + (passenger == null ? "null" : "P-" + passenger.name);
+		return jobId + ":" + (driver == null ? "null" : "D-" + driver.name) + ":" + (passenger == null ? "null" : "P-" + passenger.name);
 	}
 
 	public Driver getDriver() {
