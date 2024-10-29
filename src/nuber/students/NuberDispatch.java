@@ -49,6 +49,14 @@ public class NuberDispatch {
 		return totalActive;
 	}
 	
+	public synchronized int getTotalPendingBookings() {
+		int totalPending = 0;
+		for (NuberRegion region : regions.values()) {
+			totalPending += region.getPendingBookingsCount();
+		}
+		return totalPending;
+	}
+	
 	/**
 	 * Adds drivers to a queue of idle driver.
 	 *  
