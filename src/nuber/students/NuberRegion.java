@@ -115,5 +115,9 @@ public class NuberRegion {
 		executorService.shutdown();
 		System.out.println("Region " + regionName + "is shutting down.");
 	}
+
+	public int getActiveBookingsCount() {
+		return activeBookingsCount;
+	}
 		
 }
