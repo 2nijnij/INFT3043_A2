@@ -3,6 +3,7 @@ package nuber.students;
 import java.util.Queue;
 import java.util.LinkedList;
 import java.util.concurrent.FutureTask;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.Future;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -109,11 +110,21 @@ public class NuberRegion {
 	/**
 	 * Called by dispatch to tell the region to complete its existing bookings and stop accepting any new bookings
 	 */
-	public void shutdown()
+	public synchronized void shutdown()
 	{
 		isShuttingDown = true;
-		executorService.shutdown();
 		System.out.println("Region " + regionName + "is shutting down.");
+
+		executorService.shutdown();
+		try {
+			if (!executorService.awaitTermination(60, TimeUnit.SECONDS)) {
+	            System.err.println("Executor service did not terminate in the specified time.");
+	            executorService.shutdownNow();
+			}
+		} catch (InterruptedException e) {
+			executorService.shutdownNow();
+			Thread.currentThread().interrupt();
+		}
 	}
 
 	public int getActiveBookingsCount() {
