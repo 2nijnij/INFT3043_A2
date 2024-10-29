@@ -23,6 +23,7 @@ import java.util.concurrent.Executors;
  *
  */
 public class NuberRegion {
+	private boolean shutdownInitiated = false;
 	private final NuberDispatch dispatch;
 	private final String regionName;
 	private final int maxSimultaneousJobs;
@@ -104,30 +105,37 @@ public class NuberRegion {
 			
 	private synchronized void completeBooking(Booking booking) {
 		activeBookingsCount--;
-		dispatch.addDriver(booking.getDriver());
-		System.out.println(booking + ": Driver is now free, booking complete");
-		processPendingBookings();
+		if (activeBookingsCount == 0) {
+			notifyAll();
+		}
 	}
 		
 	
 	/**
 	 * Called by dispatch to tell the region to complete its existing bookings and stop accepting any new bookings
 	 */
-	public synchronized void shutdown()
+	public void shutdown()
 	{
-		isShuttingDown = true;
 		System.out.println("Region " + regionName + " is shutting down.");
-
-		executorService.shutdown();
-		try {
-			if (!executorService.awaitTermination(60, TimeUnit.SECONDS)) {
-	            System.err.println("Executor service did not terminate in the specified time.");
-	            executorService.shutdownNow();
-			}
-		} catch (InterruptedException e) {
-			executorService.shutdownNow();
-			Thread.currentThread().interrupt();
+		shutdownInitiated = true;
+		
+		synchronized (this) {
+			while (activeBookingsCount > 0) {
+				try {
+					System.out.println("Region " + regionName + " waiting for active bookings to complete ...");
+					wait();
+				} catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+					System.err.println("Shutdown interrupted for region" + regionName);
+				}
 		}
+		
+			while (!pendingBookings.isEmpty()) {
+				Booking booking = pendingBookings.poll();
+				System.out.println("Pending booking is cancelling: " + booking);
+			}
+		}
+		System.out.println("Region" + regionName + " has completed shutdown.");
 	}
 
 	public int getActiveBookingsCount() {
