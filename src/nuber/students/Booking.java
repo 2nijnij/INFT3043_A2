@@ -1,6 +1,7 @@
 package nuber.students;
 
 import java.util.Date;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * 
@@ -21,12 +22,13 @@ import java.util.Date;
  *
  */
 public class Booking {
-	private static int bookingCounter = 1; 
+	private static final AtomicInteger bookingCounter = new AtomicInteger(1);
     private final int jobID;
     private final Passenger passenger;
     private final NuberDispatch dispatch;
     private Driver driver;
     private long startTime;
+    private boolean isCompleted = false;
     
 	/**
 	 * Creates a new booking for a given Nuber dispatch and passenger, noting that no
@@ -40,7 +42,7 @@ public class Booking {
 	{
         this.dispatch = dispatch;
         this.passenger = passenger;
-        this.jobID = getNextjobID();
+        this.jobID = bookingCounter.getAndIncrement();
         this.startTime = 0;
 	}
 	
@@ -49,6 +51,10 @@ public class Booking {
     }
     
     public synchronized void startBooking(Driver driver) {
+        if (isCompleted) {
+            System.err.println("Attempted to start a completed booking: " + this);
+            return;
+        }
         this.driver = driver;
         this.startTime = new Date().getTime();
         notify();
