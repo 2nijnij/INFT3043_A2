@@ -174,6 +174,10 @@ public class NuberDispatch {
 	 * Tells all regions to finish existing bookings already allocated, and stop accepting new bookings
 	 */
 	public void shutdown() {
+		for (NuberRegion region : regions.values() ) {
+			region.shutdown();
+		}
+		System.out.println("NuberDispatch has shut down all regions.");
 	}
 
 }
