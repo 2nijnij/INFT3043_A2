@@ -99,6 +99,7 @@ public class Booking {
 	    } finally {
 	        if (driver != null) {
 	            dispatch.addDriver(driver);
+	            System.out.println(this + ": Driver is now free, booking complete");
 	        }
 	 }
 }
