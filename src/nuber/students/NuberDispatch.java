@@ -87,7 +87,12 @@ public class NuberDispatch {
 	 */
 	public Driver getDriver()
 	{
-	    return availableDrivers.poll();
+	    try {
+	    	return availableDrivers.take();
+	    } catch (InterruptedException e) {
+	    	Thread.currentThread().interrupt();
+	    	return null;
+	    }
 	}
 
 	/**
