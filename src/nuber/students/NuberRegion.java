@@ -2,11 +2,7 @@ package nuber.students;
 
 import java.util.Queue;
 import java.util.LinkedList;
-import java.util.concurrent.Future;
-import java.util.concurrent.FutureTask;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
 
 /**
  * A single Nuber region that operates independently of other regions, other than getting 
@@ -81,7 +77,14 @@ public class NuberRegion {
 	private synchronized void processPendingBookings() {
         while (activeBookingsCount < maxSimultaneousJobs && !pendingBookings.isEmpty()) {
             Booking booking = pendingBookings.poll();
-            Driver driver = dispatch.getDriver();
+            Driver driver;
+            try {
+            	driver = dispatch.getDriver();
+            } catch (InterruptedException e) {
+            	Thread.currentThread().interrupt();
+            	pendingBookings.offer(booking);
+            	return;
+            }
 
             if (driver != null) {
                 booking.startBooking(driver);
@@ -106,10 +109,17 @@ public class NuberRegion {
 
     private synchronized void completeBooking(Booking booking) {
         activeBookingsCount--;
-        dispatch.addDriver(booking.getDriver());
+        Driver driver = booking.getDriver();
+        
+        if (driver !=null) {
+        	dispatch.addDriver(driver);
+        }
+        
         System.out.println(booking + ": Driver is now free, booking complete");
-        // Trigger pending bookings processing after completing one
-        processPendingBookings();
+
+        if (!isShuttingDown) {
+        	processPendingBookings();
+        }
     }
 	
 	/**
