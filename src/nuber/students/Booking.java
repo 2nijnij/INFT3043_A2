@@ -45,10 +45,6 @@ public class Booking {
         this.jobID = bookingCounter.getAndIncrement();
         this.startTime = 0;
 	}
-	
-    private static synchronized int getNextjobID() {
-        return bookingCounter++;
-    }
     
     public synchronized void startBooking(Driver driver) {
         if (isCompleted) {
@@ -81,12 +77,15 @@ public class Booking {
 	 * @return A BookingResult containing the final information about the booking 
 	 */
 	public synchronized BookingResult call() {
+        if (isCompleted) {
+            System.err.println("Attempted to execute a completed booking: " + this);
+            return null;
+        }
 	    try {
 	            // If no driver is available, wait until one is assigned
-
 	                while (driver == null) {
 	                    wait();
-	                }
+	        }
 
 
 	        System.out.println(this + ": Starting, on way to passenger");
@@ -98,13 +97,14 @@ public class Booking {
 	        System.out.println(this + ": At destination, driver is now free");
 	        
 	        long tripDuration = (new Date()).getTime() - startTime;
+	        isCompleted = true;
 	        return new BookingResult(jobID, passenger, driver, tripDuration);
 
 	    } catch (InterruptedException e) {
 	        Thread.currentThread().interrupt();
 	        System.err.println("Booking interrupted: " + e.getMessage());
-	        
 	        return new BookingResult(jobID, passenger, null, -1);
+	    
 	    } finally {
 	        if (driver != null) {
 	            dispatch.addDriver(driver);
