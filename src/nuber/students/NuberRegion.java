@@ -77,14 +77,7 @@ public class NuberRegion {
 	private synchronized void processPendingBookings() {
         while (activeBookingsCount < maxSimultaneousJobs && !pendingBookings.isEmpty()) {
             Booking booking = pendingBookings.poll();
-            Driver driver;
-            try {
-            	driver = dispatch.getDriver();
-            } catch (InterruptedException e) {
-            	Thread.currentThread().interrupt();
-            	pendingBookings.offer(booking);
-            	return;
-            }
+            Driver driver = dispatch.getDriver();
 
             if (driver != null) {
                 booking.startBooking(driver);
