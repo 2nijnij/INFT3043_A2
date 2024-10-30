@@ -2,7 +2,9 @@ package nuber.students;
 
 import java.util.HashMap;
 import java.util.concurrent.Future;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+
 
 /**
  * The core Dispatch class that instantiates and manages everything for Nuber
@@ -11,7 +13,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  *
  */
 public class NuberDispatch {
-    private final ConcurrentLinkedQueue<Driver> availableDrivers;
+    private final BlockingQueue<Driver> availableDrivers;
     private final HashMap<String, NuberRegion> regions;
 	/**
 	 * The maximum number of idle drivers that can be awaiting a booking 
@@ -29,7 +31,7 @@ public class NuberDispatch {
 	 */
 	public NuberDispatch(HashMap<String, Integer> regionInfo, boolean logEvents)
 	{
-		this.availableDrivers = new ConcurrentLinkedQueue<>();
+		this.availableDrivers = new LinkedBlockingQueue<>(MAX_DRIVERS);
 		this.regions = new HashMap<>();
         this.logEvents = logEvents;
         
@@ -67,10 +69,11 @@ public class NuberDispatch {
 	 */
 	public boolean addDriver(Driver newDriver)
 	{
-	    if (availableDrivers.size() < MAX_DRIVERS) {
-	        availableDrivers.offer(newDriver);
+		try {
+	        availableDrivers.put(newDriver);
 	        return true;
-	    } else {
+	    } catch (InterruptedException e) {
+	    	Thread.currentThread().interrupt();
 	        return false;
 	    }
 	}

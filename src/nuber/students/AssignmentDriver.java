@@ -14,7 +14,6 @@ public class AssignmentDriver {
 		HashMap<String, Integer> testRegions = new HashMap<String, Integer>();
 		testRegions.put("Test Region", 50);
 		
-
 		
 		/**
 		 * This driver has a number of different sections that you can uncomment as you progress through the assignment

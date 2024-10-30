@@ -76,10 +76,13 @@ public class Booking {
 	 */
 	public synchronized BookingResult call() {
 	    try {
+	            // If no driver is available, wait until one is assigned
+
 	                while (driver == null) {
 	                    wait();
 	                }
-	                
+
+
 	        System.out.println(this + ": Starting, on way to passenger");
 	        driver.pickUpPassenger(passenger);
 
@@ -99,7 +102,6 @@ public class Booking {
 	    } finally {
 	        if (driver != null) {
 	            dispatch.addDriver(driver);
-	            System.out.println(this + ": Driver is now free, booking complete");
 	        }
 	 }
 }
@@ -117,8 +119,8 @@ public class Booking {
 	@Override
 	public String toString()
 	{
-        return jobID + ":" + (driver == null ? "null" : "D-" + driver.name) + ":" + 
-                (passenger == null ? "null" : "P-" + passenger.name);
+        return jobID + ":" + (driver == null ? "null" : driver.name) + ":" + 
+                (passenger == null ? "null" : passenger.name);
 	}
 
 }
