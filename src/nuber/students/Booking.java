@@ -68,8 +68,8 @@ public class Booking {
 	 */
 	public BookingResult call() throws InterruptedException {
         // Acquire a driver
-        this.driver = dispatch.getDriver(5000);
-        dispatch.logEvent(this, "Starting booking, getting driver");
+	    dispatch.logEvent(this, "Starting booking, getting driver");
+	    this.driver = dispatch.getDriver(5000);
 
         // Pick up passenger and drive to destination
         driver.pickUpPassenger(passenger);
