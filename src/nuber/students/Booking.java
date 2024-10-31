@@ -1,7 +1,7 @@
 package nuber.students;
 
 import java.util.Date;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * 
@@ -22,14 +22,14 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  */
 public class Booking {
-	private static final AtomicInteger bookingCounter = new AtomicInteger(1);
-    private final int jobID;
-    private final Passenger passenger;
+	
     private final NuberDispatch dispatch;
+    private Passenger passenger;
     private Driver driver;
-    private long startTime;
-    private boolean isCompleted = false;
-    
+    private final long bookingID;
+    private final long startTime;
+    private static final AtomicLong bookingCounter = new AtomicLong(1); // Atomic counter for unique IDs
+		
 	/**
 	 * Creates a new booking for a given Nuber dispatch and passenger, noting that no
 	 * driver is provided as it will depend on whether one is available when the region 
@@ -41,24 +41,14 @@ public class Booking {
 	public Booking(NuberDispatch dispatch, Passenger passenger)
 	{
         this.dispatch = dispatch;
-        this.passenger = passenger;
-        this.jobID = bookingCounter.getAndIncrement();
-        this.startTime = 0;
-	}
-    
-    public synchronized void startBooking(Driver driver) {
-        if (isCompleted) {
-            System.err.println("Attempted to start a completed booking: " + this);
-            return;
-        }
-        this.driver = driver;
+        this.passenger = null;
+        this.bookingID = bookingCounter.getAndIncrement(); 
         this.startTime = new Date().getTime();
-        notify();
+        
+        dispatch.logEvent(this, "Creating booking");
+        
+        this.passenger = passenger;
     }
-    
-	public Driver getDriver() {
-	    return driver;
-	}
 	
 	/**
 	 * At some point, the Nuber Region responsible for the booking can start it (has free spot),
@@ -76,41 +66,25 @@ public class Booking {
 	 *
 	 * @return A BookingResult containing the final information about the booking 
 	 */
-	public synchronized BookingResult call() {
-        if (isCompleted) {
-            System.err.println("Attempted to execute a completed booking: " + this);
-            return null;
-        }
-	    try {
-	            // If no driver is available, wait until one is assigned
-	                while (driver == null) {
-	                    wait();
-	        }
+	public BookingResult call() throws InterruptedException {
+        // Acquire a driver
+        this.driver = dispatch.getDriver(5000);
+        dispatch.logEvent(this, "Starting booking, getting driver");
 
+        // Pick up passenger and drive to destination
+        driver.pickUpPassenger(passenger);
+        dispatch.logEvent(this, "Collected passenger, on way to destination");
+        driver.driveToDestination();
 
-	        System.out.println(this + ": Starting, on way to passenger");
-	        driver.pickUpPassenger(passenger);
+        // Calculate trip duration
+        long endTime = new Date().getTime();
+        long tripDuration = endTime - startTime;
 
-	        System.out.println(this + ": Collected passenger, on way to destination");
-	        driver.driveToDestination();
-	        
-	        System.out.println(this + ": At destination, driver is now free");
-	        
-	        long tripDuration = (new Date()).getTime() - startTime;
-	        isCompleted = true;
-	        return new BookingResult(jobID, passenger, driver, tripDuration);
-
-	    } catch (InterruptedException e) {
-	        Thread.currentThread().interrupt();
-	        System.err.println("Booking interrupted: " + e.getMessage());
-	        return new BookingResult(jobID, passenger, null, -1);
-	    
-	    } finally {
-	        if (driver != null) {
-	            dispatch.addDriver(driver);
-	        }
-	 }
-}
+        // Return driver to dispatch and create BookingResult
+        dispatch.addDriver(driver);
+        dispatch.logEvent(this, "At destination, driver is now free");
+        return new BookingResult((int) bookingID, passenger, driver, tripDuration);
+    }
 	
 	/***
 	 * Should return the:
@@ -125,8 +99,6 @@ public class Booking {
 	@Override
 	public String toString()
 	{
-        return jobID + ":" + (driver == null ? "null" : driver.name) + ":" + 
-                (passenger == null ? "null" : passenger.name);
-	}
-
+        return bookingID + ":" + (driver != null ? driver.name : "null") + ":" + (passenger != null ? passenger.name : "null");
+    }
 }

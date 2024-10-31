@@ -1,8 +1,10 @@
 package nuber.students;
 
+import java.util.Random;
+
 public class Passenger extends Person
 {
-	
+
 	public Passenger(String name, int maxSleep) {
 		super(name, maxSleep);
 	}

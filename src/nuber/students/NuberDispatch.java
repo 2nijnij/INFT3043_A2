@@ -1,10 +1,12 @@
 package nuber.students;
 
 import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.Future;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.BlockingQueue;
-
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * The core Dispatch class that instantiates and manages everything for Nuber
@@ -13,15 +15,17 @@ import java.util.concurrent.BlockingQueue;
  *
  */
 public class NuberDispatch {
-    private final BlockingQueue<Driver> availableDrivers;
-    private final HashMap<String, NuberRegion> regions;
+
 	/**
 	 * The maximum number of idle drivers that can be awaiting a booking 
 	 */
 	private final int MAX_DRIVERS = 999;
-	
-	private boolean logEvents = false;
-	
+	private final boolean logEvents;
+    private final Map<String, NuberRegion> regions = new HashMap<>();
+    private final BlockingQueue<Driver> idleDrivers = new LinkedBlockingQueue<>(MAX_DRIVERS);
+    private final AtomicInteger bookingsAwaitingDriver = new AtomicInteger(0);
+    private volatile boolean shutdown = false;
+
 	/**
 	 * Creates a new dispatch objects and instantiates the required regions and any other objects required.
 	 * It should be able to handle a variable number of regions based on the HashMap provided.
@@ -31,34 +35,10 @@ public class NuberDispatch {
 	 */
 	public NuberDispatch(HashMap<String, Integer> regionInfo, boolean logEvents)
 	{
-		this.availableDrivers = new LinkedBlockingQueue<>(MAX_DRIVERS);
-		this.regions = new HashMap<>();
-        this.logEvents = logEvents;
-        
-        for (String regionName : regionInfo.keySet()) {
-            int maxSimultaneousJobs = regionInfo.get(regionName);
-            regions.put(regionName, new NuberRegion(this, regionName, maxSimultaneousJobs));
-        }
-
-        System.out.println("Creating Nuber Dispatch");
-    }
+		this.logEvents = logEvents;
+        regionInfo.forEach((name, maxJobs) -> regions.put(name, new NuberRegion(this, name, maxJobs)));
+	}
 	
-    public synchronized int getTotalActiveBookings1() {
-        int totalActive = 0;
-        for (NuberRegion region : regions.values()) {
-            totalActive += region.getActiveBookingsCount();
-        }
-        return totalActive;
-    }
-    
-    public synchronized int getTotalPendingBookings1() {
-        int totalPending = 0;
-        for (NuberRegion region : regions.values()) {
-            totalPending += region.getPendingBookingsCount();
-        }
-        return totalPending;
-    }
-        
 	/**
 	 * Adds drivers to a queue of idle driver.
 	 *  
@@ -69,13 +49,7 @@ public class NuberDispatch {
 	 */
 	public boolean addDriver(Driver newDriver)
 	{
-		try {
-	        availableDrivers.put(newDriver);
-	        return true;
-	    } catch (InterruptedException e) {
-	    	Thread.currentThread().interrupt();
-	        return false;
-	    }
+	    return idleDrivers.offer(newDriver);
 	}
 	
 	/**
@@ -85,14 +59,13 @@ public class NuberDispatch {
 	 * 
 	 * @return A driver that has been removed from the queue
 	 */
-	public Driver getDriver()
+	public Driver getDriver(long timeoutMillis) throws InterruptedException 
 	{
-	    try {
-	    	return availableDrivers.take();
-	    } catch (InterruptedException e) {
-	    	Thread.currentThread().interrupt();
-	    	return null;
+	    Driver driver = idleDrivers.poll(timeoutMillis, TimeUnit.MILLISECONDS);
+	    if (driver == null) {
+	        logEvent(null, "No available driver within timeout period.");
 	    }
+	    return driver;
 	}
 
 	/**
@@ -123,38 +96,26 @@ public class NuberDispatch {
 	 * @return returns a Future<BookingResult> object
 	 */
 	public Future<BookingResult> bookPassenger(Passenger passenger, String regionName) {
-        NuberRegion region = regions.get(regionName);
-
-        if (region == null) {
-            System.err.println("Region " + regionName + " does not exist.");
+        if (shutdown) {
+            Booking tempBooking = new Booking(this, passenger);
+            logEvent(tempBooking, "Rejected booking"); 
             return null;
         }
 
-        Future<BookingResult> bookingFuture = region.bookPassenger(passenger);
-        if (bookingFuture == null) {
-            System.out.println("Booking rejected for passenger " + passenger.name + " in region " + regionName);
+        NuberRegion region = regions.get(regionName);
+        if (region != null) {
+            bookingsAwaitingDriver.incrementAndGet();
+            Future<BookingResult> bookingResult = region.bookPassenger(passenger);
+            if (bookingResult != null) {
+                bookingsAwaitingDriver.decrementAndGet();
+            }
+            return bookingResult;
+        } else {
+            logEvent(null, "Region " + regionName + " not found for booking.");
+            return null;
         }
-        
-        return bookingFuture;
-
-	}
-	
-    public synchronized int getTotalActiveBookings() {
-        int totalActive = 0;
-        for (NuberRegion region : regions.values()) {
-            totalActive += region.getActiveBookingsCount();
-        }
-        return totalActive;
     }
-    
-    public synchronized int getTotalPendingBookings() {
-        int totalPending = 0;
-        for (NuberRegion region : regions.values()) {
-            totalPending += region.getPendingBookingsCount();
-        }
-        return totalPending;
-    }
-
+	 
 	/**
 	 * Gets the number of non-completed bookings that are awaiting a driver from dispatch
 	 * 
@@ -162,22 +123,17 @@ public class NuberDispatch {
 	 * 
 	 * @return Number of bookings awaiting driver, across ALL regions
 	 */
-    public synchronized int getBookingsAwaitingDriver() {
-        int totalAwaitingDrivers = 0;
-        for (NuberRegion region : regions.values()) {
-            totalAwaitingDrivers += region.getPendingBookingsCount();
-        }
-        return totalAwaitingDrivers;
-    }
+	public int getBookingsAwaitingDriver()
+	{
+        return bookingsAwaitingDriver.get();
+	}
 	
 	/**
 	 * Tells all regions to finish existing bookings already allocated, and stop accepting new bookings
 	 */
 	public void shutdown() {
-		for (NuberRegion region : regions.values() ) {
-			region.shutdown();
-		}
-		System.out.println("NuberDispatch has shut down all regions.");
-	}
+        shutdown = true;
+        regions.values().forEach(NuberRegion::shutdown);
+    }
 
 }

@@ -3,13 +3,13 @@ package nuber.students;
 import java.util.Random;
 
 public class Driver extends Person {
-
+	
     private Passenger currentPassenger;
+    private final Random random = new Random();
 
 	public Driver(String driverName, int maxSleep)
 	{
-		super(driverName, maxSleep);
-
+        super(driverName, maxSleep);
 	}
 	
 	/**
@@ -19,15 +19,13 @@ public class Driver extends Person {
 	 * @param newPassenger Passenger to collect
 	 * @throws InterruptedException
 	 */
-	public void pickUpPassenger(Passenger newPassenger) throws InterruptedException
-	{
-		this.currentPassenger = newPassenger;
-		
-		Random random = new Random();
-		int pickUpDelay = random.nextInt(maxSleep + 1);
-	    System.out.println("Driver " + name + " is picking up passenger " + newPassenger.name + " (delay: " + pickUpDelay + "ms)");
-	    Thread.sleep(pickUpDelay);
-	}
+	public void pickUpPassenger(Passenger newPassenger)throws InterruptedException {
+        this.currentPassenger = newPassenger;
+        int sleepTime = random.nextInt(maxSleep + 1);
+        Thread.sleep(sleepTime);
+        System.out.println("Driver " + name + " picking up passenger " + newPassenger.name + " with delay " + sleepTime + " ms");
+        Thread.sleep(sleepTime);
+    }
 
 	/**
 	 * Sleeps the thread for the amount of time returned by the current 
@@ -35,17 +33,12 @@ public class Driver extends Person {
 	 * 
 	 * @throws InterruptedException
 	 */
-	public void driveToDestination() throws InterruptedException 
-	{
-	    if (currentPassenger != null) {
-	        int travelTime = currentPassenger.getTravelTime();
-	        System.out.println("Driver " + name + " is driving passenger " + currentPassenger.name + " to destination (travel time: " + travelTime + "ms)");
-	        Thread.sleep(travelTime);
-	        System.out.println("Driver " + name + " has reached the destination with passenger " + currentPassenger.name);
-	        
-	        currentPassenger = null;
-	    } else {
-	        System.err.println("No passenger assigned to driver " + name + " to drive to destination.");
-	    }
+	public void driveToDestination() throws InterruptedException {
+        if (currentPassenger != null) {
+            int travelTime = currentPassenger.getTravelTime();
+            System.out.println("Driver " + name + " driving passenger " + currentPassenger.name + " to destination with travel time " + travelTime + " ms");
+            Thread.sleep(travelTime);
+        }
 	}
+	
 }
