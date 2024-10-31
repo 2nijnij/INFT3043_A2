@@ -80,6 +80,15 @@ public class NuberRegion {
 	{
         shutdown = true;
         bookingExecutor.shutdown();
+        
+        try {
+        	if (!bookingExecutor.awaitTermination(60, TimeUnit.SECONDS)) {
+        		bookingExecutor.shutdown();
+        	}
+        } catch (InterruptedException e) {
+		bookingExecutor.shutdownNow();
+		Thread.currentThread().interrupt();
 	}
 		
+	}
 }
