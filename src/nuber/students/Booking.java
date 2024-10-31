@@ -71,10 +71,11 @@ public class Booking {
 	    dispatch.logEvent(this, "Starting booking, getting driver");
 	    this.driver = dispatch.getDriver(5000);
 
-        // Pick up passenger and drive to destination
-        driver.pickUpPassenger(passenger);
-        dispatch.logEvent(this, "Collected passenger, on way to destination");
-        driver.driveToDestination();
+        if (this.driver != null) {
+        	dispatch.decrementBookingsAwaitingDriver();
+        	driver.pickUpPassenger(passenger);
+        	dispatch.logEvent(this, "Collected passenger, on way to destination");
+        	driver.driveToDestination();
 
         // Calculate trip duration
         long endTime = new Date().getTime();
@@ -83,7 +84,13 @@ public class Booking {
         // Return driver to dispatch and create BookingResult
         dispatch.addDriver(driver);
         dispatch.logEvent(this, "At destination, driver is now free");
+       
         return new BookingResult((int) bookingID, passenger, driver, tripDuration);
+    } else {
+    	dispatch.logEvent(this, "\"Booking failed due to driver's unavailability.");
+    	dispatch.decrementBookingsAwaitingDriver();
+    	return null;
+    	}
     }
 	
 	/***

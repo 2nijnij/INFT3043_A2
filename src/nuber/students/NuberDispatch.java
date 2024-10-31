@@ -118,8 +118,8 @@ public class NuberDispatch {
         if (region != null) {
             bookingsAwaitingDriver.incrementAndGet();
             Future<BookingResult> bookingResult = region.bookPassenger(passenger);
-            if (bookingResult != null) {
-                bookingsAwaitingDriver.decrementAndGet();
+            if (bookingResult == null) {
+            	bookingsAwaitingDriver.decrementAndGet();
             }
             return bookingResult;
         } else {
@@ -147,5 +147,9 @@ public class NuberDispatch {
         shutdown = true;
         regions.values().forEach(NuberRegion::shutdown);
     }
+	
+	public void decrementBookingsAwaitingDriver() {
+	    bookingsAwaitingDriver.decrementAndGet();
+	}
 
 }
