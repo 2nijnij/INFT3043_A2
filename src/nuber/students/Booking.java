@@ -74,6 +74,10 @@ public class Booking {
         dispatch.logEvent(this, "Starting booking, getting driver");
 
         this.driver = dispatch.getDriver(5000); 
+        if (driver == null) {
+            dispatch.logEvent(this, "Booking failed - no driver available within timeout");
+            return new BookingResult((int) bookingID, passenger, null, 0); // or handle as needed
+        }
         
         driver.pickUpPassenger(passenger);
         dispatch.logEvent(this, "Collected passenger, on way to destination");
@@ -84,6 +88,7 @@ public class Booking {
 
         dispatch.addDriver(driver);
         dispatch.logEvent(this, "At destination, driver is now free");
+        
         return new BookingResult((int) bookingID, passenger, driver, tripDuration);
     }
 	
