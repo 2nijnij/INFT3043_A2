@@ -15,4 +15,13 @@ public class BookingResult {
 		this.tripDuration = tripDuration;
 	}
 	
+    @Override
+    public String toString() {
+        return "BookingResult{" +
+                "bookingID=" + bookingID +
+                ", passenger=" + (passenger != null ? passenger.name : "null") +
+                ", driver=" + (driver != null ? driver.name : "null") +
+                ", tripDuration=" + tripDuration +
+                '}';
+    }
 }

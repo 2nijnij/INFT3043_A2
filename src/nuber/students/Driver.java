@@ -2,11 +2,12 @@ package nuber.students;
 
 import java.util.Random;
 
+
 public class Driver extends Person {
 	
     private Passenger currentPassenger;
     private final Random random = new Random();
-
+	
 	public Driver(String driverName, int maxSleep)
 	{
         super(driverName, maxSleep);
@@ -19,10 +20,9 @@ public class Driver extends Person {
 	 * @param newPassenger Passenger to collect
 	 * @throws InterruptedException
 	 */
-	public void pickUpPassenger(Passenger newPassenger)throws InterruptedException {
+	public void pickUpPassenger(Passenger newPassenger) throws InterruptedException {
         this.currentPassenger = newPassenger;
-        int sleepTime = random.nextInt(maxSleep + 1);
-        Thread.sleep(sleepTime);
+        int sleepTime = random.nextInt(maxSleep + 1); // Random delay between 0 and maxSleep
         System.out.println("Driver " + name + " picking up passenger " + newPassenger.name + " with delay " + sleepTime + " ms");
         Thread.sleep(sleepTime);
     }
@@ -40,5 +40,4 @@ public class Driver extends Person {
             Thread.sleep(travelTime);
         }
 	}
-	
 }

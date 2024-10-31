@@ -1,8 +1,8 @@
 package nuber.students;
 
 import java.util.Date;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-
 /**
  * 
  * Booking represents the overall "job" for a passenger getting to their destination.
@@ -22,13 +22,14 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  */
 public class Booking {
-	
+
     private final NuberDispatch dispatch;
     private Passenger passenger;
     private Driver driver;
     private final long bookingID;
     private final long startTime;
     private static final AtomicLong bookingCounter = new AtomicLong(1); // Atomic counter for unique IDs
+
 		
 	/**
 	 * Creates a new booking for a given Nuber dispatch and passenger, noting that no
@@ -42,13 +43,15 @@ public class Booking {
 	{
         this.dispatch = dispatch;
         this.passenger = null;
-        this.bookingID = bookingCounter.getAndIncrement(); 
+        this.bookingID = bookingCounter.incrementAndGet();
         this.startTime = new Date().getTime();
         
+        //dispatch.logEvent(null, bookingID + ":null:null: Creating booking");
+
         dispatch.logEvent(this, "Creating booking");
         
-        this.passenger = passenger;
-    }
+        this.passenger = passenger;        
+	}
 	
 	/**
 	 * At some point, the Nuber Region responsible for the booking can start it (has free spot),
@@ -66,31 +69,22 @@ public class Booking {
 	 *
 	 * @return A BookingResult containing the final information about the booking 
 	 */
-	public BookingResult call() throws InterruptedException {
-        // Acquire a driver
-	    dispatch.logEvent(this, "Starting booking, getting driver");
-	    this.driver = dispatch.getDriver(5000);
+    public BookingResult call() throws InterruptedException {
+    	
+        dispatch.logEvent(this, "Starting booking, getting driver");
 
-        if (this.driver != null) {
-        	dispatch.decrementBookingsAwaitingDriver();
-        	driver.pickUpPassenger(passenger);
-        	dispatch.logEvent(this, "Collected passenger, on way to destination");
-        	driver.driveToDestination();
+        this.driver = dispatch.getDriver(5000); 
+        
+        driver.pickUpPassenger(passenger);
+        dispatch.logEvent(this, "Collected passenger, on way to destination");
+        driver.driveToDestination();
 
-        // Calculate trip duration
         long endTime = new Date().getTime();
         long tripDuration = endTime - startTime;
 
-        // Return driver to dispatch and create BookingResult
         dispatch.addDriver(driver);
         dispatch.logEvent(this, "At destination, driver is now free");
-       
         return new BookingResult((int) bookingID, passenger, driver, tripDuration);
-    } else {
-    	dispatch.logEvent(this, "\"Booking failed due to driver's unavailability.");
-    	dispatch.decrementBookingsAwaitingDriver();
-    	return null;
-    	}
     }
 	
 	/***
@@ -104,8 +98,7 @@ public class Booking {
 	 * @return The compiled string
 	 */
 	@Override
-	public String toString()
-	{
+    public String toString() {
         return bookingID + ":" + (driver != null ? driver.name : "null") + ":" + (passenger != null ? passenger.name : "null");
     }
 }

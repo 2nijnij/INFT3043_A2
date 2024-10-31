@@ -33,6 +33,7 @@ public class AssignmentDriver {
 			e.printStackTrace();
 		}
 		
+		
 		//test creating a dispatch object
 		NuberDispatch dispatch = new NuberDispatch(testRegions, logEvents);
         
@@ -52,7 +53,8 @@ public class AssignmentDriver {
 		//shutdown the dispatch when it's done
 		dispatch.shutdown();
 
-		
+
+        System.out.println("All bookings completed.");
 		
 		
 		
@@ -64,10 +66,10 @@ public class AssignmentDriver {
 		regions.put("South", 50);
 		
 		//new Simulation(regions, 1, 10, 1000, logEvents);
-		//new Simulation(regions, 5, 10, 1000, logEvents);
+		new Simulation(regions, 5, 10, 1000, logEvents);
 		//new Simulation(regions, 10, 10, 1000, logEvents);
 		//new Simulation(regions, 10, 100, 1000, logEvents);
-		new Simulation(regions, 1, 50, 1000, logEvents);
+		//new Simulation(regions, 1, 50, 1000, logEvents);
 	}
 
 }

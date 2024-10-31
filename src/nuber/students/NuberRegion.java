@@ -1,8 +1,7 @@
 package nuber.students;
 
-import java.util.concurrent.*;
 import java.util.concurrent.Future;
-import java.util.concurrent.Semaphore;
+import java.util.concurrent.*;
 
 
 /**
@@ -20,13 +19,12 @@ import java.util.concurrent.Semaphore;
  *
  */
 public class NuberRegion {
-
-    private final NuberDispatch dispatch;
+	private final NuberDispatch dispatch;
     private final String regionName;
     private final Semaphore activeJobsSemaphore;
     private final ExecutorService bookingExecutor = Executors.newCachedThreadPool();
     private volatile boolean shutdown = false;
-    
+	
 	/**
 	 * Creates a new Nuber region
 	 * 
@@ -36,10 +34,10 @@ public class NuberRegion {
 	 */
 	public NuberRegion(NuberDispatch dispatch, String regionName, int maxSimultaneousJobs)
 	{
-        this.dispatch = dispatch;
-        this.regionName = regionName;
-        this.activeJobsSemaphore = new Semaphore(maxSimultaneousJobs);
-    }
+		this.dispatch = dispatch;
+		this.regionName = regionName;
+		this.activeJobsSemaphore = new Semaphore(maxSimultaneousJobs);
+}
 	
 	/**
 	 * Creates a booking for given passenger, and adds the booking to the 
@@ -52,43 +50,33 @@ public class NuberRegion {
 	 * @param waitingPassenger
 	 * @return a Future that will provide the final BookingResult object from the completed booking
 	 */
-	public Future<BookingResult> bookPassenger(Passenger waitingPassenger)
-	{
-		if (shutdown) {
+	public Future<BookingResult> bookPassenger(Passenger waitingPassenger) {
+	    if (shutdown) {
 	        Booking tempBooking = new Booking(dispatch, waitingPassenger);
-			dispatch.logEvent(null, "Rejected booking");
-			return null;
-    }
+	        dispatch.logEvent(tempBooking, "Rejected booking");
+	        return null;
+	    }
 
-    return bookingExecutor.submit(() -> {
-        try {
-            activeJobsSemaphore.acquire();
-            
-            Booking booking = new Booking(dispatch, waitingPassenger);
-            return booking.call();
-            
-        } finally {
-            activeJobsSemaphore.release();
-        }
-    });
-}
+	    return bookingExecutor.submit(() -> {
+	        try {
+	            activeJobsSemaphore.acquire(); // Enforce concurrent booking limit
+	            
+	            Booking booking = new Booking(dispatch, waitingPassenger);
+	            return booking.call(); // Process the booking lifecycle
+	       
+	        } finally {
+	            activeJobsSemaphore.release(); // Release a slot when booking is complete
+	        }
+	    });
+	}
+
 	
 	/**
 	 * Called by dispatch to tell the region to complete its existing bookings and stop accepting any new bookings
 	 */
-	public void shutdown()
-	{
+    public void shutdown() {
         shutdown = true;
         bookingExecutor.shutdown();
-        
-        try {
-        	if (!bookingExecutor.awaitTermination(60, TimeUnit.SECONDS)) {
-        		bookingExecutor.shutdown();
-        	}
-        } catch (InterruptedException e) {
-		bookingExecutor.shutdownNow();
-		Thread.currentThread().interrupt();
-	}
+    }
 		
-	}
 }
