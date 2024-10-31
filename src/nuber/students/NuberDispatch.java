@@ -36,7 +36,14 @@ public class NuberDispatch {
 	public NuberDispatch(HashMap<String, Integer> regionInfo, boolean logEvents)
 	{
 		this.logEvents = logEvents;
-        regionInfo.forEach((name, maxJobs) -> regions.put(name, new NuberRegion(this, name, maxJobs)));
+	    logEvent(null, "Creating Nuber Dispatch");
+	    
+	    regionInfo.forEach((name, maxJobs) -> {
+	        regions.put(name, new NuberRegion(this, name, maxJobs));
+	        logEvent(null, "Creating Nuber region for " + name);
+	    });	
+	    
+	    logEvent(null, "Done creating " + regions.size() + " regions");
 	}
 	
 	/**
@@ -77,12 +84,17 @@ public class NuberDispatch {
 	 * @param message The message to show
 	 */
 	public void logEvent(Booking booking, String message) {
-		
-		if (!logEvents) return;
-		
-		System.out.println(booking + ": " + message);
-		
+	    if (!logEvents) return;
+
+	    if (booking == null) {
+	        // For initialization logs, where booking is null
+	        System.out.println(message);
+	    } else {
+	        // For regular logs associated with a booking
+	        System.out.println(booking + ": " + message);
+	    }
 	}
+
 
 	/**
 	 * Books a given passenger into a given Nuber region.
