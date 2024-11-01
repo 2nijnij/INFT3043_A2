@@ -24,13 +24,16 @@ import java.util.concurrent.atomic.AtomicLong;
 public class Booking {
 
     private final NuberDispatch dispatch;
-    private Passenger passenger;
+    private final Passenger passenger;
     private Driver driver;
     private final long bookingID;
     private final long startTime;
     private static final AtomicLong bookingCounter = new AtomicLong(1); // Atomic counter for unique IDs
+    private boolean awaitingDriver = true;
+    private boolean hasStarted = false;
+    private boolean hasCompleted = false;
 
-		
+    
 	/**
 	 * Creates a new booking for a given Nuber dispatch and passenger, noting that no
 	 * driver is provided as it will depend on whether one is available when the region 
@@ -39,20 +42,51 @@ public class Booking {
 	 * @param dispatch
 	 * @param passenger
 	 */
-	public Booking(NuberDispatch dispatch, Passenger passenger)
-	{
+    public Booking(NuberDispatch dispatch, Passenger passenger) {
         this.dispatch = dispatch;
-        this.passenger = null;
+        this.passenger = passenger;
         this.bookingID = bookingCounter.incrementAndGet();
-        this.startTime = new Date().getTime();
-        
-        //dispatch.logEvent(null, bookingID + ":null:null: Creating booking");
-
+        this.startTime = System.currentTimeMillis();
+        dispatch.incrementBookingsAwaitingDriver();
         dispatch.logEvent(this, "Creating booking");
-        
-        this.passenger = passenger;        
-	}
-	
+    }
+    
+    public void assignDriver(Driver driver) {
+        if (this.driver == null) {
+            this.driver = driver;
+            awaitingDriver = false;
+            // Decrement count when a driver is assigned
+            dispatch.decrementBookingsAwaitingDriver(); 
+            dispatch.logEvent(this, driver.name + ": Driver assigned");
+        }
+    }
+    
+    public void startBooking() throws InterruptedException {
+        synchronized (this) {
+            if (driver != null && !hasStarted) {
+                hasStarted = true;
+                dispatch.logEvent(this, driver.name + ": Starting, on way to passenger");
+                driver.pickUpPassenger(passenger);
+            }
+        }
+    }
+    
+    public void completeBooking() throws InterruptedException {
+        synchronized (this) {
+            if (driver != null && passenger != null && !hasCompleted) {
+                hasCompleted = true;
+                dispatch.logEvent(this, driver.name + ": Collected passenger, on way to destination");
+                driver.driveToDestination();
+                dispatch.logEvent(this, driver.name + ": At destination, driver is now free");
+                dispatch.addDriver(driver);
+            }
+        }
+    }
+    
+    public boolean isAwaitingDriver() {
+        return awaitingDriver;
+    }
+
 	/**
 	 * At some point, the Nuber Region responsible for the booking can start it (has free spot),
 	 * and calls the Booking.call() function, which:
@@ -70,28 +104,11 @@ public class Booking {
 	 * @return A BookingResult containing the final information about the booking 
 	 */
     public BookingResult call() throws InterruptedException {
-    	
-        dispatch.logEvent(this, "Starting booking, getting driver");
-
-        this.driver = dispatch.getDriver(5000); 
-        if (driver == null) {
-            dispatch.logEvent(this, "Booking failed - no driver available within timeout");
-            return new BookingResult((int) bookingID, passenger, null, 0); // or handle as needed
-        }
-        
-        driver.pickUpPassenger(passenger);
-        dispatch.logEvent(this, "Collected passenger, on way to destination");
-        driver.driveToDestination();
-
-        long endTime = new Date().getTime();
-        long tripDuration = endTime - startTime;
-
-        dispatch.addDriver(driver);
-        dispatch.logEvent(this, "At destination, driver is now free");
-        
-        return new BookingResult((int) bookingID, passenger, driver, tripDuration);
+        startBooking();  
+        completeBooking();
+        return new BookingResult((int) bookingID, passenger, driver, System.currentTimeMillis() - startTime);
     }
-	
+
 	/***
 	 * Should return the:
 	 * - booking ID, 

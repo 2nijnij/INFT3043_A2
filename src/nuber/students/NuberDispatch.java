@@ -7,6 +7,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+
 /**
  * The core Dispatch class that instantiates and manages everything for Nuber
  * 
@@ -18,7 +19,7 @@ public class NuberDispatch {
 	/**
 	 * The maximum number of idle drivers that can be awaiting a booking 
 	 */
-	private final int MAX_DRIVERS = 999;
+    private final int MAX_DRIVERS = 999;
     private final boolean logEvents;
     private final Map<String, NuberRegion> regions = new HashMap<>();
     private final BlockingQueue<Driver> idleDrivers = new LinkedBlockingQueue<>(MAX_DRIVERS);
@@ -32,21 +33,17 @@ public class NuberDispatch {
 	 * @param regionInfo Map of region names and the max simultaneous bookings they can handle
 	 * @param logEvents Whether logEvent should print out events passed to it
 	 */
-	public NuberDispatch(HashMap<String, Integer> regionInfo, boolean logEvents)
-	{
+    public NuberDispatch(HashMap<String, Integer> regionInfo, boolean logEvents) {
         this.logEvents = logEvents;
         logEvent(null, "Creating Nuber Dispatch");
-        
         regionInfo.forEach((name, maxJobs) -> {
             regions.put(name, new NuberRegion(this, name, maxJobs));
             logEvent(null, "Creating Nuber region for " + name);
         });
-
-        regionInfo.forEach((name, maxJobs) -> regions.put(name, new NuberRegion(this, name, maxJobs)));
         logEvent(null, "Done creating " + regions.size() + " regions");
+    }
 
-	}
-	
+    
 	/**
 	 * Adds drivers to a queue of idle driver.
 	 *  
@@ -55,10 +52,13 @@ public class NuberDispatch {
 	 * @param The driver to add to the queue.
 	 * @return Returns true if driver was added to the queue
 	 */
-	public boolean addDriver(Driver newDriver)
-	{   
-        return idleDrivers.offer(newDriver);
-	}
+    public boolean addDriver(Driver newDriver) {   
+        boolean added = idleDrivers.offer(newDriver);
+        if (!added) {
+            logEvent(null, "Driver queue is full; unable to add driver: " + newDriver.name);
+        }
+        return added;
+    }
 	
 	/**
 	 * Gets a driver from the front of the queue
@@ -67,15 +67,14 @@ public class NuberDispatch {
 	 * 
 	 * @return A driver that has been removed from the queue
 	 */
-	public Driver getDriver(long timeoutMillis) throws InterruptedException {
-	    Driver driver = idleDrivers.poll(timeoutMillis, TimeUnit.MILLISECONDS);
-	    if (driver == null) {
-	        logEvent(null, "No available driver within timeout period.");
-	    }
-	    return driver;
-	}
+    public Driver getDriver(long timeoutMillis) throws InterruptedException {
+        Driver driver = idleDrivers.poll(timeoutMillis, TimeUnit.MILLISECONDS);
+        if (driver == null) {
+            logEvent(null, "No driver available within timeout of " + timeoutMillis + " ms");
+        }
+        return driver;
+    }
 	
-
 	/**
 	 * Prints out the string
 	 * 	    booking + ": " + message
@@ -84,17 +83,15 @@ public class NuberDispatch {
 	 * @param booking The booking that's responsible for the event occurring
 	 * @param message The message to show
 	 */
-	public void logEvent(Booking booking, String message) {
-		
-		if (!logEvents) return;
-		
-	    if (booking == null) {
-	        System.out.println(message);
-	    } else {
-	        System.out.println(booking + ": " + message);
-	    }
-		
-	}
+    public void logEvent(Booking booking, String message) {
+        if (!logEvents) return;
+        if (booking == null) {
+            System.out.println("System: " + message);
+        } else {
+            System.out.println(booking + ": " + message);
+        }
+    }
+
 
 	/**
 	 * Books a given passenger into a given Nuber region.
@@ -107,29 +104,33 @@ public class NuberDispatch {
 	 * @param region The region to book them into
 	 * @return returns a Future<BookingResult> object
 	 */
-	public Future<BookingResult> bookPassenger(Passenger passenger, String regionName) {
-	    if (shutdown) {
-	        Booking tempBooking = new Booking(this, passenger);
-	        logEvent(tempBooking, "Rejected booking");
-	        return null;
-	    }
+    public Future<BookingResult> bookPassenger(Passenger passenger, String regionName) {
+        if (shutdown) {
+            Booking tempBooking = new Booking(this, passenger);
+            logEvent(tempBooking, "Booking rejected: Region is shutting down.");
+            return null;
+        }
 
-	    NuberRegion region = regions.get(regionName);
-	    if (region != null) {
-	        bookingsAwaitingDriver.incrementAndGet();
-	        Future<BookingResult> bookingResult = region.bookPassenger(passenger); // Delegate booking to region
-	        if (bookingResult != null) {
-	            bookingsAwaitingDriver.decrementAndGet(); // Adjust counter when booking is handled
-	        }
-	        return bookingResult;
-	    } else {
-	        logEvent(null, "Region " + regionName + " not found for booking.");
-	        return null;
-	    }
-	}
+        NuberRegion region = regions.get(regionName);
+        if (region != null) {
+            return region.bookPassenger(passenger);
+        } else {
+            logEvent(null, "Region " + regionName + " not found for booking.");
+            return null;
+        }
+    }
+    
+    // Method to increment pending bookings
+    public synchronized void incrementBookingsAwaitingDriver() {
+        bookingsAwaitingDriver.incrementAndGet();
 
-
-
+    }
+    // Method to decrement pending bookings
+    public synchronized void decrementBookingsAwaitingDriver() {
+        if (bookingsAwaitingDriver.get() > 0) {
+            bookingsAwaitingDriver.decrementAndGet();
+        }
+    }
 	/**
 	 * Gets the number of non-completed bookings that are awaiting a driver from dispatch
 	 * 
@@ -147,6 +148,17 @@ public class NuberDispatch {
     public void shutdown() {
         shutdown = true;
         regions.values().forEach(NuberRegion::shutdown);
+        logEvent(null, "Dispatch shutdown complete.");
     }
-
-}
+    
+    public void awaitTermination() {
+        regions.values().forEach(region -> {
+            try {
+                region.awaitTermination();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                System.out.println("Error waiting for region termination: " + e.getMessage());
+            }
+        });
+    }
+    }

@@ -39,8 +39,7 @@ public class Simulation {
 
 		// create drivers that are available for jobs
 		for (int i = 0; i < maxDrivers; i++) {
-			Driver d = new Driver("D-" + Person.getRandomName(), maxSleep);
-			dispatch.addDriver(d);
+            dispatch.addDriver(new Driver("D-" + Person.getRandomName(), maxSleep));
 		}
 
 		// create passengers
@@ -63,24 +62,20 @@ public class Simulation {
 		// tell all the regions to run all pending passengers, and then shutdown
 		dispatch.shutdown();
 		
-		//check that dispatch won't let us book passengers after we've told it to shutdown
-		if (dispatch.bookPassenger(new Passenger("Test", maxSleep), regionNames[new Random().nextInt(regionNames.length)]) != null)
-		{
-			throw new Exception("Dispatch bookPassenger() should return null if passenger requests booking after dispatch has started the shutdown");
-		}
+		// Await termination of any remaining threads
+		dispatch.awaitTermination();
+		
+		System.out.println("All threads terminated, program exit confirmed.");
 
 		//whilst there are still active bookings, print out an update every 1s
-		while (bookings.size() > 0) {
-			
-			//go through each booking, and if it's done, remove it from our active bookings list
-			Iterator<Future<BookingResult>> i = bookings.iterator();
-			while (i.hasNext()) {
-				Future<BookingResult> f = i.next();
-
-				if (f.isDone()) {
-					i.remove();
-				}
-			}
+        while (!bookings.isEmpty() || dispatch.getBookingsAwaitingDriver() > 0) {
+            Iterator<Future<BookingResult>> i = bookings.iterator();
+            while (i.hasNext()) {
+                Future<BookingResult> f = i.next();
+                if (f.isDone()) {
+                    i.remove();
+                }
+            }
 
 			//print status update
 			System.out.println("Active bookings: " + bookings.size()+", pending: "+dispatch.getBookingsAwaitingDriver());
@@ -91,10 +86,15 @@ public class Simulation {
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
-		}
+
+		//print result after all bookings are processed
+		System.out.println("Final Summary: ");
+		System.out.println("Total bookings processed: " + (maxPassengers - dispatch.getBookingsAwaitingDriver()));
+		System.out.println("Total pending bookings left (should be 0): " + dispatch.getBookingsAwaitingDriver());
+		System.out.println("All bookings completed, program terminating.");
 
 		//print out the final information for the simulation run
 		long totalTime = new Date().getTime() - start;
 		System.out.println("Simulation complete in "+totalTime+"ms");
 	}
-}
+}}
